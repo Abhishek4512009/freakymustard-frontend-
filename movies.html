@@ -144,8 +144,8 @@
         /* Grid */
         .movie-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-            gap: 24px;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 16px;
         }
 
         .movie-card {
@@ -309,17 +309,25 @@
 
                 // Thumbnail Logic
                 let thumbHtml = '';
+                let title = item.name;
+
                 if (isFolder) {
                     thumbHtml = `<div class="folder-icon"><i class="ph-fill ph-folder"></i></div>`;
-                } else if (item.thumbnailLink) {
-                    thumbHtml = `<img src="${item.thumbnailLink.replace('=s220', '=s600')}" class="movie-thumb" loading="lazy">`;
                 } else {
-                    thumbHtml = `<img src="https://placehold.co/300x450/222/555?text=No+Cover" class="movie-thumb">`;
+                    // Use Metadata if available
+                    if (item.metadata && item.metadata.poster) {
+                        thumbHtml = `<img src="${item.metadata.poster}" class="movie-thumb" loading="lazy">`;
+                        title = item.metadata.title || item.name;
+                    } else if (item.thumbnailLink) {
+                        thumbHtml = `<img src="${item.thumbnailLink.replace('=s220', '=s600')}" class="movie-thumb" loading="lazy">`;
+                    } else {
+                        thumbHtml = `<img src="https://placehold.co/300x450/222/555?text=No+Cover" class="movie-thumb">`;
+                    }
                 }
 
                 card.innerHTML = `
                     ${thumbHtml}
-                    <div class="movie-info"><div class="movie-title">${item.name}</div></div>
+                    <div class="movie-info"><div class="movie-title">${title}</div></div>
                 `;
 
                 // Interaction Logic
