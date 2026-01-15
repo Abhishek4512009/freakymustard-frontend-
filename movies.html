@@ -212,9 +212,20 @@
         </div>
         <div class="sub-controls">
             <span>Subtitles:</span>
-            <input type="file" id="subInput" accept=".vtt,.srt" style="color: gray;">
-            <button onclick="uploadSub()"
-                style="padding: 8px 16px; background: var(--primary-color); border: none; color: white; border-radius: 4px; cursor: pointer;">Upload</button>
+            <!-- Hidden File Input -->
+            <input type="file" id="subInput" accept=".vtt,.srt" style="display: none;" onchange="handleFileSelect()">
+            
+            <!-- Custom Trigger Button -->
+            <button onclick="document.getElementById('subInput').click()" 
+                style="padding: 8px 16px; background: #333; border: 1px solid #555; color: white; border-radius: 4px; cursor: pointer; margin-right: 10px;">
+                Choose File
+            </button>
+            
+            <!-- Upload Action Button -->
+            <button id="uploadBtn" onclick="uploadSub()" disabled
+                style="padding: 8px 16px; background: var(--primary-color); border: none; color: white; border-radius: 4px; cursor: pointer; opacity: 0.5;">
+                Upload
+            </button>
         </div>
     </div>
 
@@ -249,7 +260,7 @@
                 card.className = 'movie-card';
                 // Use Google Drive Thumbnail or Default Placeholder
                 const thumb = m.thumbnailLink ? m.thumbnailLink.replace('=s220', '=s600') : 'https://via.placeholder.com/300x450?text=No+Cover';
-
+                
                 card.innerHTML = `
                     <img src="${thumb}" class="movie-thumb" loading="lazy">
                     <div class="movie-info"><div class="movie-title">${m.name}</div></div>
@@ -273,6 +284,16 @@
             videoModal.style.display = 'none';
             videoPlayer.pause();
             videoPlayer.src = '';
+        }
+
+        function handleFileSelect() {
+            const file = document.getElementById('subInput').files[0];
+            const btn = document.getElementById('uploadBtn');
+            if (file) {
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                btn.innerText = "Upload: " + file.name;
+            }
         }
 
         async function uploadSub() {
