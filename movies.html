@@ -112,60 +112,6 @@
             text-overflow: ellipsis;
         }
 
-        /* Video Modal */
-        .video-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: black;
-            z-index: 2000;
-            flex-direction: column;
-        }
-
-        .video-container {
-            flex: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            position: relative;
-        }
-
-        video {
-            width: 100%;
-            max-height: calc(100vh - 100px); /* Leave space for controls */
-            outline: none;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-        }
-
-        .close-video {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            color: white;
-            font-size: 32px;
-            cursor: pointer;
-            z-index: 2100;
-            background: rgba(0, 0, 0, 0.5);
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        /* Subtitle controls */
-        .sub-controls {
-            padding: 20px;
-            background: #222;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
         @media (max-width: 768px) {
             body {
                 display: block;
@@ -203,33 +149,6 @@
         <div class="movie-grid" id="movieGrid">Loading...</div>
     </main>
 
-    <!-- Fullscreen Video Player -->
-    <div id="videoModal" class="video-modal">
-        <div class="close-video" onclick="closeVideo()">&times;</div>
-        <div class="video-container">
-            <video id="mainVideo" controls crossorigin="anonymous">
-                <track id="mainTrack" label="English" kind="subtitles" srclang="en" default>
-            </video>
-        </div>
-        <div class="sub-controls">
-            <span>Subtitles:</span>
-            <!-- Hidden File Input -->
-            <input type="file" id="subInput" accept=".vtt,.srt" style="display: none;" onchange="handleFileSelect()">
-            
-            <!-- Custom Trigger Button -->
-            <button onclick="document.getElementById('subInput').click()" 
-                style="padding: 8px 16px; background: #333; border: 1px solid #555; color: white; border-radius: 4px; cursor: pointer; margin-right: 10px;">
-                Choose File
-            </button>
-            
-            <!-- Upload Action Button -->
-            <button id="uploadBtn" onclick="uploadSub()" disabled
-                style="padding: 8px 16px; background: var(--primary-color); border: none; color: white; border-radius: 4px; cursor: pointer; opacity: 0.5;">
-                Upload
-            </button>
-        </div>
-    </div>
-
     <nav class="bottom-nav">
         <div class="nav-item" onclick="window.location.href='index.html'"><i class="ph-fill ph-house"></i></div>
         <div class="nav-item active"><i class="ph-fill ph-film-strip"></i></div>
@@ -240,11 +159,6 @@
         const API_URL = 'https://freakymustard.onrender.com';
 
         const grid = document.getElementById('movieGrid');
-        const videoModal = document.getElementById('videoModal');
-        const videoPlayer = document.getElementById('mainVideo');
-        const trackEl = document.getElementById('mainTrack');
-
-        let currentFileId = null;
 
         async function fetchMovies() {
             try {
@@ -266,55 +180,10 @@
                     <img src="${thumb}" class="movie-thumb" loading="lazy">
                     <div class="movie-info"><div class="movie-title">${m.name}</div></div>
                 `;
-                card.onclick = () => openVideo(m.id);
+                // NAVIGATION TO STANDALONE PLAYER
+                card.onclick = () => window.location.href = `player.html?id=${m.id}`;
                 grid.appendChild(card);
             });
-        }
-
-        function openVideo(fileId) {
-            currentFileId = fileId;
-            videoModal.style.display = 'flex';
-            videoPlayer.src = `${API_URL}/api/movies/stream/${fileId}`;
-
-            // Reset Subtitle Track
-            trackEl.src = "";
-            // Load New Subtitle (with cache busting)
-            trackEl.src = `${API_URL}/api/subtitles/${fileId}?t=${Date.now()}`;
-            
-            videoPlayer.play();
-        }
-
-        function closeVideo() {
-            videoModal.style.display = 'none';
-            videoPlayer.pause();
-            videoPlayer.src = '';
-        }
-
-        function handleFileSelect() {
-            const file = document.getElementById('subInput').files[0];
-            const btn = document.getElementById('uploadBtn');
-            if (file) {
-                btn.disabled = false;
-                btn.style.opacity = '1';
-                btn.innerText = "Upload: " + file.name;
-            }
-        }
-
-        async function uploadSub() {
-            const file = document.getElementById('subInput').files[0];
-            if (!file || !currentFileId) return;
-
-            const formData = new FormData();
-            formData.append('subtitle', file);
-
-            try {
-                await fetch(`${API_URL}/api/subtitles/upload/${currentFileId}`, {
-                    method: 'POST', body: formData
-                });
-                alert("Subtitle uploaded! Restarting video...");
-                // Reload sub
-                trackEl.src = `${API_URL}/api/subtitles/${currentFileId}?t=${Date.now()}`;
-            } catch (e) { alert("Upload failed"); }
         }
 
         fetchMovies();
