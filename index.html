@@ -464,7 +464,7 @@
             height: 100%;
             background: rgba(0, 0, 0, 0.7);
             backdrop-filter: blur(5px);
-            z-index: 1000;
+            z-index: 3000;
             justify-content: center;
             align-items: center;
         }
@@ -951,14 +951,28 @@
         async function confirmAddToLib() {
             const fileId = pendingFileId;
             closeModal();
-            if (!fileId) return;
+            const folderId = localStorage.getItem('folderId');
+            if (!fileId) return showStatus("❌ Error: No file selected", 3000);
+            if (!folderId || folderId === 'null') return showStatus("❌ Error: No Library Folder set. Please login again.", 3000);
+            
+            showStatus("⏳ Adding to library...", 0); // Indefinite until done
+
             try {
                 const res = await fetch(`${API_URL}/api/music/library/add`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ fileId: fileId, folderId: localStorage.getItem('folderId') })
+                    body: JSON.stringify({ fileId, folderId })
                 });
-                if (res.ok) showStatus("✅ Added to library!", 2000);
-            } catch (e) { console.error(e); }
+                if (res.ok) {
+                    showStatus("✅ Added to library!", 2000);
+                } else {
+                    const errText = await res.text();
+                    console.error("Add failed:", errText);
+                    showStatus(`❌ Add failed: ${res.status}`, 3000);
+                }
+            } catch (e) { 
+                console.error(e);
+                showStatus("❌ Network Error", 3000);
+            }
         }
 
         function removeFromLib(e, fileId) {
@@ -971,6 +985,9 @@
             const fileId = pendingFileId;
             closeModal();
             if (!fileId) return;
+
+            showStatus("⏳ Removing...", 0);
+
             try {
                 const res = await fetch(`${API_URL}/api/music/library/remove`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -979,8 +996,15 @@
                 if (res.ok) {
                     showStatus("🗑️ Deleted!", 2000);
                     fetchTracks(localStorage.getItem('folderId'));
+                } else {
+                    const errText = await res.text();
+                    console.error("Remove failed:", errText);
+                    showStatus(`❌ Delete failed: ${res.status}`, 3000);
                 }
-            } catch (e) { console.error(e); }
+            } catch (e) { 
+                console.error(e);
+                showStatus("❌ Network Error", 3000);
+            }
         }
 
         async function saveNewOrder() {
