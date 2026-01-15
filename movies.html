@@ -15,7 +15,6 @@
             --sidebar-width: 240px;
             --primary-color: #1db954;
             --glass-bg: rgba(255, 255, 255, 0.05);
-            --gradient-red: linear-gradient(90deg, #ff4b1f, #ff9068);
         }
 
         * {
@@ -78,63 +77,48 @@
             position: relative;
         }
 
-        /* Hero Section */
+        /* Simplified Header */
         .hero {
-            height: 300px;
+            padding: 32px 20px 0 20px;
             display: flex;
             flex-direction: column;
-            justify-content: center;
             align-items: center;
-            text-align: center;
-            background: radial-gradient(circle at 50% 0%, rgba(255, 75, 31, 0.15), transparent 70%);
-            padding: 20px;
         }
 
-        .hero h1 {
-            font-size: 3rem;
-            font-weight: 800;
-            margin: 0;
-            background: var(--gradient-red);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            letter-spacing: -1px;
-        }
-
-        .hero p {
-            color: #b3b3b3;
-            margin-top: 10px;
-            font-size: 1.1rem;
-        }
-
-        /* Categories */
+        /* Categories - Clean Green Theme */
         .categories {
             display: flex;
             justify-content: center;
-            gap: 16px;
-            margin-top: 30px;
+            gap: 12px;
+            margin-bottom: 20px;
         }
 
         .cat-btn {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.08); /* Subtle background */
+            border: 1px solid transparent;
             color: #b3b3b3;
-            padding: 10px 24px;
+            padding: 8px 20px;
             border-radius: 50px;
-            font-weight: 600;
+            font-weight: 500;
+            font-size: 0.9rem;
             cursor: pointer;
-            transition: 0.3s;
+            transition: 0.2s;
         }
 
-        .cat-btn.active, .cat-btn:hover {
-            background: #ff4b1f; /* Red Theme for Movies */
+        .cat-btn:hover {
             color: white;
-            border-color: #ff4b1f;
-            box-shadow: 0 4px 15px rgba(255, 75, 31, 0.3);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .cat-btn.active {
+            background: var(--primary-color);
+            color: black;
+            font-weight: 700;
+            box-shadow: 0 4px 12px rgba(29, 185, 84, 0.3);
         }
 
         .content-area {
-            padding: 32px;
+            padding: 20px 32px;
         }
 
         .nav-header {
@@ -244,9 +228,6 @@
 
     <main class="main-content">
         <div class="hero">
-            <h1>Unlimited Entertainment.</h1>
-            <p>Stream directly from the cloud.</p>
-
             <div class="categories">
                 <button class="cat-btn active" onclick="setCategory('movies')">Movies</button>
                 <button class="cat-btn" onclick="setCategory('series')">Series</button>
