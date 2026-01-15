@@ -135,8 +135,9 @@
 
         video {
             width: 100%;
-            max-height: 100vh;
+            max-height: calc(100vh - 100px); /* Leave space for controls */
             outline: none;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
         }
 
         .close-video {
@@ -275,8 +276,11 @@
             videoModal.style.display = 'flex';
             videoPlayer.src = `${API_URL}/api/movies/stream/${fileId}`;
 
-            // Load Subtitle if exists
-            trackEl.src = `${API_URL}/api/subtitles/${fileId}`;
+            // Reset Subtitle Track
+            trackEl.src = "";
+            // Load New Subtitle (with cache busting)
+            trackEl.src = `${API_URL}/api/subtitles/${fileId}?t=${Date.now()}`;
+            
             videoPlayer.play();
         }
 
