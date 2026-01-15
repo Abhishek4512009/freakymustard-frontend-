@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Streamer - Movies</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script>if (!localStorage.getItem('isLoggedIn')) window.location.replace('login.html');</script>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --sidebar-width: 240px;
+            --primary-color: #1db954;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: white;
+            height: 100vh;
+            display: grid;
+            grid-template-areas: "sidebar main";
+            grid-template-columns: var(--sidebar-width) 1fr;
+        }
+
+        .sidebar {
+            grid-area: sidebar;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 24px;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 40px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-item {
+            color: #b3b3b3;
+            font-weight: 600;
+            margin-bottom: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            color: white;
+        }
+
+        .main-content {
+            grid-area: main;
+            padding: 32px;
+            overflow-y: auto;
+            background: linear-gradient(180deg, rgba(0, 0, 0, 0.5) 0%, #121212 100%);
+        }
+
+        /* Grid for Movies */
+        .movie-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 24px;
+        }
+
+        .movie-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: 0.3s;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .movie-card:hover {
+            transform: scale(1.05);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .movie-thumb {
+            width: 100%;
+            height: 220px;
+            background: #333;
+            object-fit: cover;
+        }
+
+        .movie-info {
+            padding: 12px;
+        }
+
+        .movie-title {
+            font-weight: 600;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Video Modal */
+        .video-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: black;
+            z-index: 2000;
+            flex-direction: column;
+        }
+
+        .video-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        video {
+            width: 100%;
+            max-height: 100vh;
+            outline: none;
+        }
+
+        .close-video {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: white;
+            font-size: 32px;
+            cursor: pointer;
+            z-index: 2100;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Subtitle controls */
+        .sub-controls {
+            padding: 20px;
+            background: #222;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                display: block;
+            }
+
+            .sidebar {
+                display: none;
+            }
+
+            .bottom-nav {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                width: 100%;
+                height: 60px;
+                background: #121212;
+                display: flex;
+                justify-content: space-around;
+                align-items: center;
+                border-top: 1px solid #333;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <aside class="sidebar">
+        <div class="logo"><span style="color: var(--primary-color);">&#9835;</span> Streamer</div>
+        <div class="nav-item" onclick="window.location.href='index.html'"><i class="ph-fill ph-house"></i> Music</div>
+        <div class="nav-item active"><i class="ph-fill ph-film-strip"></i> Movies</div>
+    </aside>
+
+    <main class="main-content">
+        <h2>Movies</h2>
+        <div class="movie-grid" id="movieGrid">Loading...</div>
+    </main>
+
+    <!-- Fullscreen Video Player -->
+    <div id="videoModal" class="video-modal">
+        <div class="close-video" onclick="closeVideo()">&times;</div>
+        <div class="video-container">
+            <video id="mainVideo" controls crossorigin="anonymous">
+                <track id="mainTrack" label="English" kind="subtitles" srclang="en" default>
+            </video>
+        </div>
+        <div class="sub-controls">
+            <span>Subtitles:</span>
+            <input type="file" id="subInput" accept=".vtt,.srt" style="color: gray;">
+            <button onclick="uploadSub()"
+                style="padding: 8px 16px; background: var(--primary-color); border: none; color: white; border-radius: 4px; cursor: pointer;">Upload</button>
+        </div>
+    </div>
+
+    <nav class="bottom-nav">
+        <div class="nav-item" onclick="window.location.href='index.html'"><i class="ph-fill ph-house"></i></div>
+        <div class="nav-item active"><i class="ph-fill ph-film-strip"></i></div>
+    </nav>
+
+    <script>
+        // 🔴 UPDATE THIS WITH YOUR RENDER BACKEND URL (No trailing slash)
+        const API_URL = 'https://YOUR-RENDER-URL.onrender.com';
+
+        const grid = document.getElementById('movieGrid');
+        const videoModal = document.getElementById('videoModal');
+        const videoPlayer = document.getElementById('mainVideo');
+        const trackEl = document.getElementById('mainTrack');
+
+        let currentFileId = null;
+
+        async function fetchMovies() {
+            try {
+                const res = await fetch(`${API_URL}/api/movies/list`);
+                const movies = await res.json();
+                renderMovies(movies);
+            } catch (e) { grid.innerText = "Error loading movies"; }
+        }
+
+        function renderMovies(movies) {
+            grid.innerHTML = '';
+            movies.forEach(m => {
+                const card = document.createElement('div');
+                card.className = 'movie-card';
+                // Use Google Drive Thumbnail or Default Placeholder
+                const thumb = m.thumbnailLink ? m.thumbnailLink.replace('=s220', '=s600') : 'https://via.placeholder.com/300x450?text=No+Cover';
+
+                card.innerHTML = `
+                    <img src="${thumb}" class="movie-thumb" loading="lazy">
+                    <div class="movie-info"><div class="movie-title">${m.name}</div></div>
+                `;
+                card.onclick = () => openVideo(m.id);
+                grid.appendChild(card);
+            });
+        }
+
+        function openVideo(fileId) {
+            currentFileId = fileId;
+            videoModal.style.display = 'flex';
+            videoPlayer.src = `${API_URL}/api/movies/stream/${fileId}`;
+
+            // Load Subtitle if exists
+            trackEl.src = `${API_URL}/api/subtitles/${fileId}`;
+            videoPlayer.play();
+        }
+
+        function closeVideo() {
+            videoModal.style.display = 'none';
+            videoPlayer.pause();
+            videoPlayer.src = '';
+        }
+
+        async function uploadSub() {
+            const file = document.getElementById('subInput').files[0];
+            if (!file || !currentFileId) return;
+
+            const formData = new FormData();
+            formData.append('subtitle', file);
+
+            try {
+                await fetch(`${API_URL}/api/subtitles/upload/${currentFileId}`, {
+                    method: 'POST', body: formData
+                });
+                alert("Subtitle uploaded! Restarting video...");
+                // Reload sub
+                trackEl.src = `${API_URL}/api/subtitles/${currentFileId}?t=${Date.now()}`;
+            } catch (e) { alert("Upload failed"); }
+        }
+
+        fetchMovies();
+    </script>
+</body>
+
+</html>

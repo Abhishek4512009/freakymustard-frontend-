@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Streamer - Music</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script>
+        if (!localStorage.getItem('isLoggedIn')) window.location.replace('login.html');
+    </script>
+    <style>
+        /* --- COPY OF MYSTREAM CSS --- */
+        :root {
+            --bg-color: #121212;
+            --sidebar-width: 240px;
+            --player-height: 90px;
+            --primary-color: #1db954;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-primary: #ffffff;
+            --text-secondary: #b3b3b3;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+            display: grid;
+            grid-template-areas: "sidebar main" "player player";
+            grid-template-columns: var(--sidebar-width) 1fr;
+            grid-template-rows: 1fr var(--player-height);
+        }
+
+        /* Sidebar */
+        .sidebar {
+            grid-area: sidebar;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            border-right: 1px solid var(--glass-border);
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-links {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .nav-item {
+            color: var(--text-secondary);
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: 0.3s;
+            text-decoration: none;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            color: var(--text-primary);
+            filter: brightness(1.2);
+        }
+
+        /* Main */
+        .main-content {
+            grid-area: main;
+            overflow-y: auto;
+            padding: 32px;
+            background: linear-gradient(180deg, rgba(0, 0, 0, 0.5) 0%, rgba(18, 18, 18, 1) 100%);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 32px;
+        }
+
+        .search-bar {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 50px;
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .search-bar input {
+            background: transparent;
+            border: none;
+            color: white;
+            width: 100%;
+            outline: none;
+        }
+
+        /* Tracks */
+        .track-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding-bottom: 50px;
+        }
+
+        .track-row {
+            display: grid;
+            grid-template-columns: 30px 40px 1fr 100px 50px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            align-items: center;
+        }
+
+        .track-row:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+        }
+
+        .track-row.playing {
+            color: var(--primary-color);
+            background: rgba(29, 185, 84, 0.1);
+        }
+
+        /* Player */
+        .player-bar {
+            grid-area: player;
+            background: #181818;
+            border-top: 1px solid #282828;
+            padding: 0 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            z-index: 100;
+        }
+
+        .now-playing {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            width: 30%;
+        }
+
+        .player-controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 40%;
+            gap: 5px;
+        }
+
+        .control-buttons {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+
+        .play-btn {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: white;
+            color: black;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .playback-bar {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #b3b3b3;
+            font-size: 0.7rem;
+        }
+
+        .progress-container {
+            flex: 1;
+            height: 4px;
+            background: #4f4f4f;
+            border-radius: 2px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--primary-color);
+            width: 0%;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: #282828;
+            padding: 32px;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 500px;
+        }
+
+        .modal-input {
+            width: 100%;
+            padding: 14px;
+            background: #181818;
+            border: 1px solid #444;
+            color: white;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 50px;
+            cursor: pointer;
+            border: none;
+            font-weight: 700;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                display: block;
+            }
+
+            .sidebar {
+                display: none;
+            }
+
+            .player-bar {
+                position: fixed;
+                bottom: 60px;
+                left: 0;
+                width: 100%;
+                height: 80px;
+            }
+
+            .bottom-nav {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                width: 100%;
+                height: 60px;
+                background: #121212;
+                display: flex;
+                justify-content: space-around;
+                align-items: center;
+                border-top: 1px solid #333;
+                z-index: 2000;
+            }
+
+            .main-content {
+                padding-bottom: 150px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <aside class="sidebar">
+        <div class="logo"><span style="color: var(--primary-color);">&#9835;</span> Streamer</div>
+        <ul class="nav-links">
+            <li class="nav-item active" onclick="switchView('home')"><i class="ph-fill ph-house"></i> Music</li>
+            <li class="nav-item" onclick="window.location.href='movies.html'"><i class="ph-fill ph-film-strip"></i>
+                Movies</li>
+            <li class="nav-item" onclick="openModal()"><i class="ph-bold ph-plus"></i> Add Song</li>
+            <li class="nav-item" onclick="logout()"><i class="ph-bold ph-sign-out"></i> Logout</li>
+        </ul>
+    </aside>
+
+    <main class="main-content">
+        <div class="header">
+            <div class="search-bar"><span>&#128269;</span><input type="text" id="filterInput"
+                    placeholder="Filter songs..." onkeyup="filterTracks()"></div>
+        </div>
+        <h2 id="viewTitle">My Library</h2>
+        <div id="loading">Loading...</div>
+        <div class="track-list" id="trackList"></div>
+    </main>
+
+    <!-- Modals -->
+    <div id="addSongModal" class="modal">
+        <div class="modal-content">
+            <h3>Add Song</h3>
+            <p>Download from YouTube to your library.</p>
+            <input type="text" id="songInput" class="modal-input" placeholder="Song Name">
+            <button class="btn btn-primary" onclick="downloadSong()" id="dlBtn">Download</button>
+            <button class="btn" onclick="closeModal()">Cancel</button>
+        </div>
+    </div>
+
+    <footer class="player-bar">
+        <div class="now-playing">
+            <div class="track-info">
+                <div id="currentSong">No Track</div>
+            </div>
+        </div>
+        <div class="player-controls">
+            <div class="control-buttons">
+                <button class="play-btn" onclick="togglePlay()" id="playPauseBtn"><i
+                        class="ph-fill ph-play"></i></button>
+            </div>
+            <div class="playback-bar">
+                <div class="progress-container" id="progressContainer">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+            </div>
+            <audio id="audioPlayer"></audio>
+        </div>
+    </footer>
+
+    <nav class="bottom-nav">
+        <div class="nav-item active" onclick="switchView('home')"><i class="ph-fill ph-house"></i></div>
+        <div class="nav-item" onclick="window.location.href='movies.html'"><i class="ph-fill ph-film-strip"></i></div>
+        <div class="nav-item" onclick="openModal()"><i class="ph-bold ph-plus-circle"></i></div>
+    </nav>
+
+    <script>
+        // 🔴 UPDATE THIS WITH YOUR RENDER BACKEND URL (e.g., https://my-app.onrender.com) (No trailing slash)
+        const API_URL = 'https://YOUR-RENDER-URL.onrender.com';
+
+        const trackListEl = document.getElementById('trackList');
+        const audioPlayer = document.getElementById('audioPlayer');
+        let allTracks = [];
+
+        async function fetchTracks() {
+            try {
+                const res = await fetch(`${API_URL}/api/music/tracks?username=${localStorage.getItem('username')}`);
+                allTracks = await res.json();
+                renderTracks(allTracks);
+                document.getElementById('loading').style.display = 'none';
+            } catch (e) { console.error(e); }
+        }
+
+        function renderTracks(tracks) {
+            trackListEl.innerHTML = '';
+            tracks.forEach((track, index) => {
+                const row = document.createElement('div');
+                row.className = 'track-row';
+                row.innerHTML = `<div>${index + 1}</div><div></div><div>${track.name.replace('.mp3', '')}</div><div>${(track.size / 1024 / 1024).toFixed(1)}MB</div>`;
+                row.onclick = () => playTrack(track);
+                trackListEl.appendChild(row);
+            });
+        }
+
+        function playTrack(track) {
+            document.getElementById('currentSong').innerText = track.name.replace('.mp3', '');
+            audioPlayer.src = `${API_URL}/api/music/stream/${track.id}`;
+            audioPlayer.play();
+            document.getElementById('playPauseBtn').innerHTML = '<i class="ph-fill ph-pause"></i>';
+        }
+
+        function togglePlay() {
+            if (audioPlayer.paused) { audioPlayer.play(); document.getElementById('playPauseBtn').innerHTML = '<i class="ph-fill ph-pause"></i>'; }
+            else { audioPlayer.pause(); document.getElementById('playPauseBtn').innerHTML = '<i class="ph-fill ph-play"></i>'; }
+        }
+
+        async function downloadSong() {
+            const name = document.getElementById('songInput').value;
+            document.getElementById('dlBtn').innerText = "Downloading...";
+            await fetch(`${API_URL}/api/music/download`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ songName: name, username: localStorage.getItem('username') })
+            });
+            document.getElementById('dlBtn').innerText = "Download";
+            closeModal();
+            fetchTracks();
+        }
+
+        function closeModal() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
+        function openModal() { document.getElementById('addSongModal').style.display = 'flex'; }
+
+        function logout() { localStorage.clear(); window.location.href = 'login.html'; }
+
+        // Progress Bar
+        audioPlayer.ontimeupdate = () => {
+            if (audioPlayer.duration) {
+                const pct = (audioPlayer.currentTime / audioPlayer.duration) * 100;
+                document.getElementById('progressFill').style.width = pct + '%';
+            }
+        }
+
+        fetchTracks();
+    </script>
+</body>
+
+</html>
