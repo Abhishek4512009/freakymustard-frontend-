@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -16,35 +17,61 @@
             --neon-orange: #ff4500;
         }
 
-        body { 
-            background: #000; 
-            color: #fff; font-family: 'Inter', sans-serif; 
-            margin: 0; min-height: 100vh;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        body {
+            background: #000;
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
 
         /* --- BACK BUTTON --- */
         .back-btn {
-            position: absolute; top: 20px; left: 20px;
-            background: rgba(50, 50, 50, 0.5); color: white;
-            text-decoration: none; font-weight: 600;
-            padding: 10px 20px; border-radius: 30px;
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(50, 50, 50, 0.5);
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            padding: 10px 20px;
+            border-radius: 30px;
             backdrop-filter: blur(5px);
-            transition: 0.3s; z-index: 100;
-            display: flex; align-items: center; gap: 8px; border: none;
+            transition: 0.3s;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: none;
         }
-        .back-btn:hover { background: white; color: black; transform: translateX(5px); }
+
+        .back-btn:hover {
+            background: white;
+            color: black;
+            transform: translateX(5px);
+        }
 
         /* --- VIDEO CONTAINER --- */
         .video-wrapper {
             position: relative;
-            width: 100%; max-width: 1200px;
+            width: 100%;
+            max-width: 1200px;
             background: #000;
-            border-radius: 12px; overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
         }
 
-        video { width: 100%; display: block; outline: none; max-height: 80vh; }
+        video {
+            width: 100%;
+            display: block;
+            outline: none;
+            max-height: 80vh;
+        }
 
         /* --- CONTROLS BAR --- */
         .control-panel {
@@ -53,52 +80,157 @@
             backdrop-filter: blur(12px);
             padding: 15px 30px;
             border-radius: 16px;
-            display: flex; gap: 15px;
+            display: flex;
+            gap: 15px;
             width: auto;
             border: none;
-            flex-wrap: wrap; justify-content: center;
+            flex-wrap: wrap;
+            justify-content: center;
         }
 
         .btn-action {
             background: rgba(255, 255, 255, 0.1);
-            color: #ddd; border: none;
-            padding: 12px 24px; border-radius: 8px;
-            font-weight: 600; cursor: pointer; text-decoration: none;
-            display: flex; align-items: center; gap: 10px;
-            transition: all 0.2s; font-size: 0.9rem;
+            color: #ddd;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.2s;
+            font-size: 0.9rem;
         }
 
-        .btn-sub:hover { background: rgba(0, 255, 255, 0.2); color: var(--neon-blue); }
-        .btn-dl:hover { background: rgba(0, 255, 0, 0.2); color: var(--neon-green); }
-        
-        .btn-ext { border: 1px solid var(--neon-purple); color: var(--neon-purple); }
-        .btn-ext:hover { background: var(--neon-purple); color: white; }
+        .btn-sub:hover {
+            background: rgba(0, 255, 255, 0.2);
+            color: var(--neon-blue);
+        }
 
-        .btn-turbo { border: 1px solid var(--neon-orange); color: var(--neon-orange); }
-        .btn-turbo:hover { background: var(--neon-orange); color: white; box-shadow: 0 0 15px var(--neon-orange); }
+        .btn-dl:hover {
+            background: rgba(0, 255, 0, 0.2);
+            color: var(--neon-green);
+        }
 
-        #fileInput { display: none; }
+        .btn-ext {
+            border: 1px solid var(--neon-purple);
+            color: var(--neon-purple);
+        }
+
+        .btn-ext:hover {
+            background: var(--neon-purple);
+            color: white;
+        }
+
+        .btn-turbo {
+            border: 1px solid var(--neon-orange);
+            color: var(--neon-orange);
+        }
+
+        .btn-turbo:hover {
+            background: var(--neon-orange);
+            color: white;
+            box-shadow: 0 0 15px var(--neon-orange);
+        }
+
+        #fileInput {
+            display: none;
+        }
 
         /* --- NOTIFICATION --- */
         #toast {
-            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-            background: #28a745; color: white; padding: 12px 25px;
-            border-radius: 50px; font-weight: bold;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.5);
-            opacity: 0; transition: opacity 0.5s, transform 0.5s;
-            pointer-events: none; z-index: 1000;
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #28a745;
+            color: white;
+            padding: 12px 25px;
+            border-radius: 50px;
+            font-weight: bold;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+            opacity: 0;
+            transition: opacity 0.5s, transform 0.5s;
+            pointer-events: none;
+            z-index: 1000;
         }
-        #toast.show { opacity: 1; transform: translateX(-50%) translateY(10px); }
+
+        #toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(10px);
+        }
 
         /* --- MOBILE TWEAKS --- */
         @media (max-width: 768px) {
-            .video-wrapper { width: 100%; border-radius: 0; }
-            .control-panel { width: 100%; gap: 8px; padding: 10px; margin-top: 0; background: #111; border-radius: 0; }
-            .btn-action { flex: 1; justify-content: center; background: #222; font-size: 0.75rem; padding: 10px 5px; white-space: nowrap; }
-            .back-btn { top: 15px; left: 15px; padding: 8px 12px; font-size: 0.75rem; background: rgba(0, 0, 0, 0.6); }
+            .video-wrapper {
+                width: 100%;
+                border-radius: 0;
+            }
+
+            .control-panel {
+                width: 100%;
+                gap: 8px;
+                padding: 10px;
+                margin-top: 0;
+                background: #111;
+                border-radius: 0;
+            }
+
+            .btn-action {
+                flex: 1;
+                justify-content: center;
+                background: #222;
+                border-radius: 4px; /* Reduced from 8px for tighter fit */
+                font-size: 0.7rem;
+                padding: 8px 4px;
+                white-space: nowrap;
+                gap: 6px;
+                border: 1px solid transparent; /* Ensure borders don't jump layout */
+            }
+
+            /* Specifically adjusting the 'External' and 'Turbo' buttons on mobile */
+            .btn-turbo, .btn-ext {
+                 border-width: 1px;
+            }
+
+            .back-btn {
+                top: 15px;
+                left: 15px;
+                padding: 8px 12px;
+                font-size: 0.75rem;
+                background: rgba(0, 0, 0, 0.6);
+            }
+        }
+
+        /* --- METADATA PANEL --- */
+        .meta-info {
+            width: 90%;
+            max-width: 800px;
+            text-align: center;
+            margin: 20px auto 40px;
+            padding: 20px;
+            background: linear-gradient(180deg, rgba(20, 20, 20, 0) 0%, rgba(20, 20, 20, 0.8) 100%);
+            border-radius: 12px;
+        }
+        .meta-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: #fff;
+            text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
+        }
+        .meta-desc {
+            font-size: 1rem;
+            color: #ccc;
+            line-height: 1.6;
+            max-width: 700px;
+            margin: 0 auto;
         }
     </style>
 </head>
+
 <body>
 
     <a href="movies.html" class="back-btn"><span>←</span> Back to Movies</a>
@@ -131,15 +263,21 @@
         </button>
     </div>
 
+    <!-- Metadata Display -->
+    <div id="metaContainer" class="meta-info" style="display: none;">
+        <div id="metaTitle" class="meta-title"></div>
+        <div id="metaDesc" class="meta-desc"></div>
+    </div>
+
     <script>
         const API_URL = 'https://freakymustard.onrender.com';
-        
+
         const video = document.getElementById('player');
         const track = document.getElementById('subTrack');
         const downloadBtn = document.getElementById('downloadLink');
         const fileInput = document.getElementById('fileInput');
         const toast = document.getElementById('toast');
-        
+
         const urlParams = new URLSearchParams(window.location.search);
         const activeFileId = urlParams.get('id');
         let streamUrl = "";
@@ -148,24 +286,34 @@
         if (activeFileId) {
             // Update Base URLs to use deployment
             const streamEndpoint = `${API_URL}/api/movies/stream/${activeFileId}`;
-            
+
             streamUrl = streamEndpoint;
             video.src = streamEndpoint;
             downloadBtn.href = streamEndpoint; // Download link
             track.src = `${API_URL}/api/subtitles/${activeFileId}?t=${Date.now()}`;
+
+            // Load Metadata
+            const storedMeta = JSON.parse(localStorage.getItem('currentVideoMeta'));
+            if (storedMeta) {
+                document.getElementById('metaContainer').style.display = 'block';
+                document.getElementById('metaTitle').innerText = storedMeta.title;
+                document.getElementById('metaDesc').innerText = storedMeta.description;
+                document.title = "Watching: " + storedMeta.title;
+            }
+
         } else {
-             alert('No video ID provided!');
-             window.location.href = 'movies.html';
+            alert('No video ID provided!');
+            window.location.href = 'movies.html';
         }
 
         // Toggle Stream Mode (Placeholder as mostly same endpoint now)
         function toggleStreamMode() {
-            const currentTime = video.currentTime; 
+            const currentTime = video.currentTime;
             const isPaused = video.paused;
 
             // Just reloading for now or we could add a query param to bust cache or something
             video.src = video.src.includes('?') ? video.src.split('?')[0] : video.src + '?turbo=true';
-            
+
             showToast("🚀 Turbo Mode Refreshed");
 
             video.currentTime = currentTime;
@@ -175,7 +323,7 @@
         // SMART OPEN FUNCTION
         function openExternalPlayer() {
             const isAndroid = /Android/i.test(navigator.userAgent);
-            
+
             if (isAndroid) {
                 const intentUrl = `intent:${streamUrl}#Intent;action=android.intent.action.VIEW;type=video/*;end`;
                 window.location.href = intentUrl;
@@ -188,7 +336,7 @@
             }
         }
 
-        video.onerror = function() {
+        video.onerror = function () {
             showToast("⚠️ Error. Try Turbo Mode or External!");
         };
 
@@ -202,7 +350,7 @@
             if (fileInput.files.length === 0) return;
             const formData = new FormData();
             formData.append('subtitle', fileInput.files[0]);
-            
+
             const btn = document.querySelector('.btn-sub');
             const originalText = btn.innerHTML;
             btn.innerHTML = "⏳ ...";
@@ -214,9 +362,10 @@
                     // Cache bust
                     track.src = `${API_URL}/api/subtitles/${activeFileId}?t=${Date.now()}`;
                 } else { showToast("❌ Failed"); }
-            } catch (err) { showToast("❌ Error"); } 
+            } catch (err) { showToast("❌ Error"); }
             finally { btn.innerHTML = originalText; }
         });
     </script>
 </body>
+
 </html>
