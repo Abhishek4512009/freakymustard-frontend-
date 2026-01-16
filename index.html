@@ -866,9 +866,22 @@
                 fallbackTolerance: 5, scroll: true,
                 fallbackClass: 'sortable-fallback', chosenClass: 'sortable-chosen', dragClass: 'sortable-drag',
                 onEnd: function (evt) {
-                    // Visually re-index the numbers immediately
+                    // Visually re-index
                     const rows = document.querySelectorAll('.track-row .track-num');
                     rows.forEach((el, idx) => el.innerText = idx + 1);
+
+                    // Sync internal allTracks array to match visual order
+                    const rowEls = document.querySelectorAll('.track-row');
+                    const newIds = Array.from(rowEls).map(r => r.dataset.id);
+                    const trackMap = new Map(allTracks.map(t => [t.id, t]));
+                    allTracks = newIds.map(id => trackMap.get(id)).filter(Boolean);
+
+                    // Update currentTrackIndex to match new position
+                    const playingRow = document.querySelector('.track-row.playing');
+                    if (playingRow) {
+                        currentTrackIndex = Array.from(trackListEl.children).indexOf(playingRow);
+                    }
+
                     saveNewOrder();
                 }
             });
