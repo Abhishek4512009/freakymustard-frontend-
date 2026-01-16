@@ -1062,24 +1062,86 @@
             const songName = document.getElementById('songInput').value;
             if (!songName) return;
             const folderId = localStorage.getItem('folderId');
-            showStatus(`🔎 Searching & Downloading...`);
-            dlBtn.innerHTML = "Downloading...";
+
+            showStatus(`🔎 Searching...`);
+            dlBtn.innerHTML = "Searching...";
             dlBtn.disabled = true;
+
             try {
+                // 1. Initiate Download
                 const res = await fetch(`${API_URL}/api/music/download`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ songName, folderId })
                 });
-                if (res.ok) {
-                    showStatus("✅ Added to your library!", 4000);
-                    document.getElementById('songInput').value = "";
-                    closeModal();
-                    if (currentView === 'library') fetchTracks(folderId);
-                } else {
-                    const err = await res.text();
-                    showStatus(`❌ Error: ${err}`, 5000);
+
+                const data = await res.json();
+
+                if (!data.success) {
+                    showStatus(`❌ Error: ${data.message || 'Failed to start'}`);
+                    resetDlBtn();
+                    return;
                 }
-            } catch (error) { showStatus("❌ Network Error", 5000); }
+
+                const downloadId = data.downloadId;
+                dlBtn.innerHTML = "Downloading 0%";
+
+                // 2. Listen for Progress (SSE)
+                const eventSource = new EventSource(`${API_URL}/api/music/progress/${downloadId}`);
+
+                const progressBar = document.createElement('div');
+                progressBar.style.cssText = "width: 100%; height: 4px; background: #333; margin-top: 10px; border-radius: 2px; overflow: hidden;";
+                const progressFill = document.createElement('div');
+                progressFill.style.cssText = "width: 0%; height: 100%; background: var(--primary-color); transition: width 0.3s;";
+                progressBar.appendChild(progressFill);
+
+                // Insert Progress Bar into Modal if not exists
+                const modalParams = document.querySelector('#addSongModal .modal-content');
+                if (!document.getElementById('dlProgress')) {
+                    progressBar.id = 'dlProgress';
+                    modalParams.insertBefore(progressBar, document.querySelector('.modal-actions'));
+                }
+
+                eventSource.onmessage = (e) => {
+                    const progress = JSON.parse(e.data);
+
+                    if (progress.status === 'downloading') {
+                        const p = Math.round(progress.percent);
+                        dlBtn.innerHTML = `Downloading ${p}%`;
+                        document.querySelector('#dlProgress div').style.width = `${p}%`;
+                    } else if (progress.status === 'uploading') {
+                        dlBtn.innerHTML = "Uploading to Drive...";
+                        document.querySelector('#dlProgress div').style.width = `100%`;
+                        document.querySelector('#dlProgress div').style.backgroundColor = "#ffff00"; // Yellow for upload
+                    } else if (progress.status === 'completed') {
+                        eventSource.close();
+                        showStatus(`✅ Added: ${progress.title}`, 4000);
+                        document.getElementById('songInput').value = "";
+                        closeModal();
+                        if (currentView === 'library') fetchTracks(folderId);
+                        resetDlBtn();
+                        if (document.getElementById('dlProgress')) document.getElementById('dlProgress').remove();
+                    } else if (progress.status === 'error') {
+                        eventSource.close();
+                        showStatus(`❌ Error: ${progress.message}`);
+                        resetDlBtn();
+                        if (document.getElementById('dlProgress')) document.getElementById('dlProgress').remove();
+                    }
+                };
+
+                eventSource.onerror = () => {
+                    eventSource.close();
+                    // showStatus("❌ Connection Lost"); 
+                    // Don't reset immediately, maybe just network blip
+                };
+
+            } catch (error) {
+                console.error(error);
+                showStatus("❌ Network Error", 5000);
+                resetDlBtn();
+            }
+        }
+
+        function resetDlBtn() {
             dlBtn.disabled = false;
             dlBtn.innerHTML = "Download";
         }
