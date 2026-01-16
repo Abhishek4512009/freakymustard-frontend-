@@ -316,10 +316,26 @@
                 if (folderId) url += `&folderId=${folderId}`;
 
                 const res = await fetch(url);
-                const items = await res.json();
-                renderItems(items);
+                const contentType = res.headers.get("content-type");
+                
+                if (res.ok && contentType && contentType.includes("application/json")) {
+                    const items = await res.json();
+                    renderItems(items);
+                } else {
+                    // Handle non-JSON or error responses
+                    const text = await res.text();
+                    console.error("Fetch Error:", text);
+                    try {
+                        // Try to parse JSON error even if status is not OK
+                        const jsonErr = JSON.parse(text);
+                        grid.innerHTML = `<div style="color:#ff5555;">Error: ${jsonErr.error || "Unknown Error"}</div>`;
+                    } catch (e) {
+                         // Fallback to plain text if JSON parse fails
+                        grid.innerHTML = `<div style="color:#ff5555;">Error: ${text.substring(0, 100) || "Failed to load content."}</div>`;
+                    }
+                }
             } catch (e) {
-                grid.innerText = "Error loading content.";
+                grid.innerText = "Network Error loading content.";
                 console.error(e);
             }
         }
