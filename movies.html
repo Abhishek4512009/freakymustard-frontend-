@@ -341,7 +341,17 @@
                 let title = item.name;
 
                 if (isFolder) {
-                    thumbHtml = `<div class="folder-icon"><i class="ph-fill ph-folder"></i></div>`;
+                    if (item.metadata && item.metadata.poster) {
+                        thumbHtml = `
+                            <img src="${item.metadata.poster}" class="movie-thumb" loading="lazy" alt="${title}">
+                            <div style="position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.6); padding: 4px; border-radius: 50%; display: flex;">
+                                <i class="ph-fill ph-folder" style="color: white; font-size: 1.2rem;"></i>
+                            </div>
+                        `;
+                        title = item.metadata.title || item.name;
+                    } else {
+                        thumbHtml = `<div class="folder-icon"><i class="ph-fill ph-folder"></i></div>`;
+                    }
                 } else {
                     // Use Metadata if available
                     if (item.metadata && item.metadata.poster) {
@@ -387,7 +397,7 @@
             fetchMovies(prevFolder);
         }
 
-        // Handle Nav display
+        // Handle Mobile Nav visibility
         if (window.innerWidth <= 768) document.querySelector('.bottom-nav').style.display = 'flex';
 
         // Initial Load
