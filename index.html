@@ -6,23 +6,35 @@
     <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Drive Streamer</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script>
+        if (!localStorage.getItem('isLoggedIn')) {
+            window.location.replace('login.html');
+        }
+    </script>
     <style>
         :root {
             --bg-color: #121212;
             --sidebar-width: 240px;
-            --primary-color: #1db954;
             --player-height: 90px;
-            --header-height: 64px;
+            --primary-color: #1db954;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-primary: #ffffff;
+            --text-secondary: #b3b3b3;
+            --nav-height: 60px;
         }
 
-        /* --- Global Reset & Fonts --- */
         * {
             box-sizing: border-box;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
+        }
+
+        html,
+        body {
+            width: 100%;
+            max-width: 100%;
+            overflow-x: hidden;
         }
 
         body {
@@ -30,180 +42,234 @@
             padding: 0;
             font-family: 'Inter', sans-serif;
             background-color: var(--bg-color);
-            color: white;
+            color: var(--text-primary);
             height: 100vh;
+            height: 100dvh;
+            position: relative;
+            width: 100vw;
+            overscroll-behavior: none;
+            overflow: hidden;
             display: grid;
             grid-template-areas:
-                "sidebar main"
-                "player player";
+                "sidebar main";
             grid-template-columns: var(--sidebar-width) 1fr;
-            grid-template-rows: 1fr var(--player-height);
+            grid-template-rows: 1fr;
         }
 
-        /* --- Sidebar --- */
+        /* Gradient Background */
+        body::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 50% 50%, rgba(29, 185, 84, 0.15), transparent 60%);
+            z-index: -1;
+            animation: pulse 15s infinite alternate;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                opacity: 0.5;
+            }
+
+            100% {
+                transform: scale(1.2);
+                opacity: 1;
+            }
+        }
+
+        /* Sidebar */
         .sidebar {
             grid-area: sidebar;
-            background: #000;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
             padding: 24px;
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 24px;
+            border-right: 1px solid var(--glass-border);
         }
 
         .logo {
             font-size: 24px;
             font-weight: 700;
-            margin-bottom: 20px;
+            color: var(--text-primary);
             display: flex;
             align-items: center;
             gap: 10px;
-            color: white;
+        }
+
+        .nav-links {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
         }
 
         .nav-item {
-            color: #b3b3b3;
+            color: var(--text-secondary);
             font-weight: 600;
             cursor: pointer;
+            transition: 0.3s;
             display: flex;
             align-items: center;
-            gap: 15px;
-            padding: 10px 0;
-            transition: 0.2s;
-            text-decoration: none;
-            font-size: 14px;
+            gap: 12px;
         }
 
         .nav-item:hover,
         .nav-item.active {
-            color: white;
+            color: var(--text-primary);
+            filter: brightness(1.2);
         }
 
-        .nav-item i {
-            font-size: 20px;
-        }
-
-        /* --- Main Content --- */
+        /* Main Content */
         .main-content {
             grid-area: main;
-            background: linear-gradient(180deg, #222 0%, #121212 40%);
             overflow-y: auto;
-            padding: 24px 32px;
-            position: relative;
+            padding: 32px;
+            background: linear-gradient(180deg, rgba(0, 0, 0, 0.5) 0%, rgba(18, 18, 18, 1) 100%);
         }
 
-        /* Search Bar */
+        /* Bottom Nav (Hidden on Desktop) */
+        .bottom-nav {
+            display: none;
+        }
+
+        /* Mobile Logout Button (Hidden on desktop) */
+        .mobile-logout {
+            display: none;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+
         .search-bar {
-            background: #333;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
             border-radius: 50px;
             padding: 10px 20px;
-            width: 360px;
-            border: none;
-            color: white;
-            font-family: inherit;
-            margin-bottom: 30px;
             display: flex;
             align-items: center;
-            gap: 10px;
+            width: 100%;
+            max-width: 400px;
+            transition: 0.3s;
         }
 
-        .search-input {
+        .search-bar:focus-within {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: #fff;
+        }
+
+        .search-bar input {
             background: transparent;
             border: none;
             color: white;
-            outline: none;
             width: 100%;
-            font-size: 0.9rem;
+            outline: none;
+            font-family: inherit;
+        }
+
+        h2 {
+            margin-top: 0;
+            font-size: 2rem;
         }
 
         /* Track List */
         .track-list {
             display: flex;
             flex-direction: column;
+            gap: 8px;
+            padding-bottom: 50px;
         }
 
         .track-row {
             display: grid;
-            grid-template-columns: 40px 40px 1fr 100px 50px;
-            align-items: center;
-            padding: 10px 15px;
-            border-radius: 4px;
+            grid-template-columns: 30px 40px 1fr 100px 50px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            color: var(--text-secondary);
             cursor: pointer;
-            color: #b3b3b3;
-            font-size: 0.9rem;
             transition: 0.2s;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05); /* Separator line */
-            height: 56px; /* Explicit height for clearer drag target */
-            background: transparent; /* Default background */
-        }
-        
-        .track-row:hover {
-            background-color: rgba(255, 255, 255, 0.1);
-            color: white;
-        }
-        
-        .track-row.playing {
-            /* color: var(--primary-color); */ /* Removed explicit green text color */
-            /* font-weight: 500; */ /* Optional: subtle weight increase */
-            background-color: rgba(29, 185, 84, 0.15) !important; /* Slight green tint background */
-        }
-        
-        /* Make the track title specifically stand out */
-        .track-row.playing .track-title {
-            color: var(--primary-color);
-            font-weight: 600;
-        }
-        
-        /* Drag Placeholder Styling */
-        .sortable-ghost {
-            opacity: 0; /* Make the original item invisible while dragging */
-            /* OR use a distinctive style like: opacity: 0.4; background: #333; */
-        }
-        
-        .sortable-drag {
-            background: #282828; /* Darker background for the item being dragged */
-            opacity: 1;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.5); /* Lift it up visually */
-            cursor: grabbing;
-        }
-        
-        /* For the sortable-fallback class (used by forceFallback: true) */
-        .sortable-fallback {
-            opacity: 1 !important;
-            background: #282828;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-            pointer-events: none; /* Crucial for smooth movement */
+            align-items: center;
+            user-select: none;
+            -webkit-user-select: none;
         }
 
+        .track-row:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+        }
+
+        .track-row.playing {
+            color: var(--primary-color);
+            background: rgba(29, 185, 84, 0.1);
+        }
+
+        .track-row.dragging {
+            opacity: 0.5;
+            background: rgba(255, 255, 255, 0.05);
+        }
 
         .drag-handle {
             cursor: grab;
-            opacity: 0.5;
-            display: none;
-            /* Hidden by default, shown in Library */
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            transition: color 0.2s;
+            touch-action: none;
         }
 
         .drag-handle:hover {
-            opacity: 1;
-            color: white;
+            color: var(--primary-color);
         }
 
-        /* Action Buttons */
+        .track-row.sortable-chosen .drag-handle {
+            cursor: grabbing;
+        }
+
+        .track-num {
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        .track-title {
+            font-weight: 500;
+            font-size: 1rem;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .track-actions {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
         .action-btn {
             background: transparent;
             border: none;
-            color: #b3b3b3;
+            color: var(--text-secondary);
             cursor: pointer;
             font-size: 1.2rem;
-            opacity: 0;
-            transition: opacity 0.2s;
-        }
-
-        .track-row:hover .action-btn {
-            opacity: 1;
+            padding: 5px;
+            transition: 0.2s;
         }
 
         .action-btn:hover {
-            color: white;
+            color: #fff;
             transform: scale(1.1);
         }
 
@@ -215,37 +281,32 @@
             color: #ff4d4d;
         }
 
-
-        /* --- Loading Spinner --- */
-        #loading {
-            text-align: center;
-            margin-top: 50px;
-            font-size: 1.5rem;
-            color: var(--primary-color);
-            display: none;
-        }
-
-
-        /* --- Player Bar --- */
+        /* Player Bar */
         .player-bar {
             grid-area: player;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 90px;
             background: #181818;
             border-top: 1px solid #282828;
-            padding: 0 20px;
+            padding: 0 24px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            z-index: 100;
+            z-index: 1000;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);
         }
 
-        .player-left {
+        .now-playing {
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 16px;
             width: 30%;
         }
 
-        .album-art {
+        .cover-art {
             width: 56px;
             height: 56px;
             background: #333;
@@ -255,138 +316,145 @@
             justify-content: center;
             font-size: 24px;
             color: #555;
+            flex-shrink: 0;
         }
 
-        .song-info {
+        .track-info {
             display: flex;
             flex-direction: column;
             justify-content: center;
+            overflow: hidden;
         }
 
-        .song-title {
-            color: white;
+        .track-name-lcd {
+            font-weight: 600;
+            color: #fff;
             font-size: 0.9rem;
-            font-weight: 500;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
-        .artist-name {
-            color: #b3b3b3;
+        .artist-name-lcd {
             font-size: 0.75rem;
+            color: #b3b3b3;
         }
 
-        .player-center {
+        .player-controls {
             display: flex;
             flex-direction: column;
             align-items: center;
             width: 40%;
-            gap: 8px;
+            gap: 5px;
         }
 
-        .controls {
+        .control-buttons {
             display: flex;
+            gap: 16px;
             align-items: center;
-            gap: 20px;
-        }
-
-        .ctrl-btn {
-            background: transparent;
-            border: none;
-            color: #b3b3b3;
-            font-size: 1.2rem;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-
-        .ctrl-btn:hover {
-            color: white;
+            justify-content: center;
+            margin-bottom: 8px;
+            width: 100%;
         }
 
         .play-btn {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
             background: white;
             color: black;
-            border-radius: 50%;
-            width: 32px;
-            height: 32px;
+            border: none;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.2rem;
+            cursor: pointer;
+            font-size: 16px;
+            transition: 0.2s;
         }
 
         .play-btn:hover {
-            transform: scale(1.05);
-            color: black;
+            transform: scale(1.1);
         }
 
-        .progress-container {
+        .playback-bar {
             width: 100%;
             display: flex;
             align-items: center;
             gap: 10px;
+            font-size: 0.7rem;
             color: #b3b3b3;
-            font-size: 0.75rem;
         }
 
-        .progress-bar {
+        .progress-container {
             flex: 1;
             height: 4px;
             background: #4f4f4f;
             border-radius: 2px;
-            position: relative;
             cursor: pointer;
+            position: relative;
+            touch-action: none;
         }
 
-        /* Improved Hit Area for Mobile Scrubbing */
-        .progress-bar::after {
+        .progress-container::before {
             content: '';
             position: absolute;
             top: -10px;
             bottom: -10px;
             left: 0;
             right: 0;
-            z-index: 2;
+            z-index: 10;
         }
 
         .progress-fill {
-            width: 0%;
             height: 100%;
-            background: white;
+            background: var(--primary-color);
             border-radius: 2px;
+            width: 0%;
             position: relative;
         }
-        
-        /* Persistent visible handle for current position */
+
         .progress-fill::after {
             content: '';
             position: absolute;
-            right: -6px; /* Center handle on the end of the fill */
-            top: 50%;
-            transform: translateY(-50%);
-            width: 12px;
-            height: 12px;
-            background-color: white;
+            right: -6px;
+            top: -3px;
+            width: 10px;
+            height: 10px;
+            background: white;
             border-radius: 50%;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
-            display: none; /* Hidden by default, shown on hover/drag */
-        }
-        
-        .progress-bar:hover .progress-fill {
-            background: var(--primary-color);
-        }
-        
-        .progress-bar:hover .progress-fill::after {
-            display: block; /* Show handle on hover */
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+            opacity: 0;
+            transition: opacity 0.2s;
         }
 
-        .player-right {
-            width: 30%;
-            display: flex;
-            justify-content: flex-end;
+        .progress-container:hover .progress-fill::after {
+            opacity: 1;
+        }
+
+        .ctrl-btn {
+            background: transparent;
+            border: none;
             color: #b3b3b3;
-            font-size: 0.8rem;
+            cursor: pointer;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px;
+            transition: 0.2s;
+            line-height: 0;
         }
 
-        /* --- Modals --- */
+        .ctrl-btn:hover {
+            color: white;
+        }
+
+        .ctrl-btn.active {
+            color: var(--primary-color);
+        }
+
+        /* Modal Styles */
         .modal {
             display: none;
             position: fixed;
@@ -395,331 +463,380 @@
             width: 100%;
             height: 100%;
             background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            z-index: 3000;
             justify-content: center;
             align-items: center;
-            z-index: 1000;
         }
 
         .modal-content {
             background: #282828;
-            padding: 30px;
-            border-radius: 10px;
-            width: 400px;
-            text-align: center;
-            color: white;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 32px;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 500px;
+            position: relative;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal h3 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
         }
 
         .modal-input {
             width: 100%;
-            padding: 12px;
-            margin: 20px 0;
-            background: #3e3e3e;
-            border: 1px solid #333;
-            border-radius: 4px;
+            padding: 14px;
+            border-radius: 8px;
+            border: 1px solid #444;
+            background: #181818;
             color: white;
-            font-family: inherit;
+            font-size: 1rem;
+            margin-bottom: 20px;
+            outline: none;
         }
 
-        .modal-btn {
+        .modal-input:focus {
+            border-color: var(--primary-color);
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        .btn {
             padding: 12px 24px;
             border-radius: 50px;
-            border: none;
             font-weight: 700;
             cursor: pointer;
-            margin: 5px;
+            border: none;
+            font-size: 0.9rem;
+            transition: 0.2s;
         }
 
-        .btn-confirm {
+        .btn-primary {
             background: var(--primary-color);
-            color: black;
+            color: white;
         }
 
-        .btn-cancel {
+        .btn-primary:hover {
+            transform: scale(1.05);
+            background: #1ed760;
+        }
+
+        .btn-secondary {
             background: transparent;
-            color: white;
+            color: #b3b3b3;
             border: 1px solid #555;
         }
 
-        /* --- Responsive Mobile Styles --- */
-        .mobile-nav {
+        .btn-secondary:hover {
+            color: white;
+            border-color: white;
+        }
+
+        #status {
+            position: fixed;
+            bottom: 100px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: 1px solid #333;
             display: none;
+            z-index: 500;
+        }
+
+        .quality-label {
+            width: 30%;
+            text-align: right;
+            font-size: 0.8rem;
+            color: #888;
         }
 
         @media (max-width: 768px) {
             body {
                 display: block;
-                height: 100vh;
                 overflow: hidden;
+                position: relative;
             }
 
-            .sidebar, .player-right {
+            .sidebar {
                 display: none;
             }
 
             .main-content {
-                height: calc(100vh - 120px); /* Space for player + nav */
-                padding: 20px 15px;
+                height: 100vh;
+                padding: 16px;
+                padding-bottom: 160px;
             }
 
-            .search-bar {
-                width: 100%;
+            .track-row {
+                grid-template-columns: 30px 25px 1fr 30px;
+                gap: 8px;
+                padding: 12px 8px;
+            }
+
+            .track-row div:nth-child(4) {
+                display: none;
             }
 
             .player-bar {
                 position: fixed;
-                bottom: 50px; /* Above nav */
+                bottom: 65px;
                 left: 0;
                 width: 100%;
-                height: 70px; /* Compact */
-                padding: 0 10px;
+                height: auto;
+                min-height: 80px;
+                padding: 10px 16px;
+                flex-direction: column;
+                gap: 5px;
                 background: #181818;
                 border-top: 1px solid #282828;
+                border-bottom: 1px solid #282828;
+                z-index: 1900;
             }
 
-            .player-center {
-                position: absolute;
-                top: 0;
-                left: 0;
+            .quality-label {
+                display: none;
+            }
+
+            .now-playing {
                 width: 100%;
-                height: 4px; /* Only progress bar at top */
-                flex-direction: row;
+                margin-bottom: 5px;
             }
 
-            .controls {
-                position: absolute;
-                right: 15px;
-                top: 20px;
+            .player-controls {
+                width: 100%;
+            }
+
+            .control-buttons {
                 gap: 20px;
-            }
-            .time-display { display: none; }
-            .btn-loop, .btn-shuffle { display: none; }
-            .progress-container { margin: 0; gap: 0; height: 4px; }
-            .progress-bar { height: 4px; border-radius: 0; }
-            .progress-fill::after { display: block; right: -8px; width: 14px; height: 14px; opacity: 1; }  /* Always show handle on mobile */
-
-            .player-left {
-                width: 70%;
-                margin-top: 10px;
+                justify-content: space-between;
+                width: 100%;
             }
 
-            /* Bottom Nav */
-            .mobile-nav {
+            .bottom-nav {
                 display: flex;
                 position: fixed;
                 bottom: 0;
                 left: 0;
                 width: 100%;
-                height: 50px;
+                height: 65px;
                 background: #121212;
                 border-top: 1px solid #333;
                 justify-content: space-around;
                 align-items: center;
-                z-index: 200;
+                z-index: 2000;
+                padding-bottom: env(safe-area-inset-bottom);
             }
 
-            .mobile-nav .nav-item {
+            .bottom-nav .nav-item {
                 flex-direction: column;
                 gap: 4px;
                 font-size: 10px;
                 padding: 0;
-                margin: 0;
                 color: #b3b3b3;
-            }
-            .mobile-nav .nav-item.active { color: white; }
-            .mobile-nav i { font-size: 20px; }
-            
-            /* Mobile Track List Adjustments */
-             .track-row {
-                grid-template-columns: 30px 30px 1fr 40px; /* Reduced columns */
-                gap: 5px;
-                padding: 10px 5px;
-                height: auto; /* Allow flexible height */
+                background: transparent;
+                flex: 1;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
 
-            /* Hide size column on mobile */
-            .track-row div:nth-child(4) {
-                display: none;
-            }
-
-            /* Adjust actions column */
-            .track-row .track-actions {
-                /* Make it visible always on mobile or handle via tap */
-                opacity: 1; 
-            }
-            
-            /* Action button size on mobile */
-            .action-btn {
-                font-size: 1.4rem; /* Larger touch target */
-                padding: 10px;
-            }
-
-            .track-title {
-                font-size: 0.9rem;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                max-width: 65vw; /* Prevent overflow */
+            .mobile-logout {
+                display: block;
+                background: transparent;
+                border: none;
+                color: #ff4d4d;
+                font-size: 24px;
+                cursor: pointer;
+                padding: 5px;
             }
         }
 
-        /* --- Toast Notification --- */
-        .toast {
-            position: fixed;
-            bottom: 120px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #28a745;
-            color: white;
-            padding: 12px 24px;
-            border-radius: 30px;
-            font-weight: 600;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            display: none;
-            z-index: 2000;
-            animation: fadeInOut 3s forwards;
+        .sortable-ghost {
+            opacity: 1 !important;
+            background: transparent !important;
+            border: 2px dashed rgba(255, 255, 255, 0.3) !important;
+            box-shadow: none !important;
         }
 
-        @keyframes fadeInOut {
-            0% { opacity: 0; transform: translate(-50%, 20px); }
-            10% { opacity: 1; transform: translate(-50%, 0); }
-            80% { opacity: 1; transform: translate(-50%, 0); }
-            100% { opacity: 0; transform: translate(-50%, -20px); display: none; }
+        .sortable-drag {
+            opacity: 1 !important;
+            background: #282828;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+            transform: scale(1.02);
         }
-        
+
+        .sortable-fallback {
+            opacity: 1 !important;
+            background: #181818;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            cursor: grabbing;
+            transition: none !important;
+        }
     </style>
 </head>
 
 <body>
-    <!-- Sidebar -->
+
     <aside class="sidebar">
-        <div class="logo"><span style="color: var(--primary-color);">&#9835;</span> Streamer</div>
-        <div id="nav-home" class="nav-item active" onclick="switchView('home')">
-            <i class="ph-fill ph-house"></i> Home
+        <div class="logo">
+            <span style="color: var(--primary-color); font-size: 32px;">&#9835;</span> Streamer
         </div>
-        <a href="movies.html" class="nav-item">
-            <i class="ph-fill ph-film-strip"></i> Movies
-        </a>
-        <div class="nav-item" onclick="openModal()">
-            <i class="ph-bold ph-plus"></i> Add Song
-        </div>
-        <div id="nav-lib" class="nav-item" onclick="switchView('library')">
-            <i class="ph-fill ph-books"></i> Your Library
-        </div>
-        <div class="nav-item" style="margin-top: auto; color: #ff4d4d;" onclick="logout()">
-            <i class="ph-bold ph-sign-out"></i> Logout
-        </div>
+        <ul class="nav-links">
+            <li class="nav-item active" onclick="switchView('home')" id="nav-home"><i class="ph-fill ph-house"></i> Home
+            </li>
+            <!-- LINK TO MOVIES.HTML -->
+            <li class="nav-item" onclick="window.location.href='movies.html'"><i class="ph-fill ph-film-strip"></i>
+                Movies</li>
+            <li class="nav-item" onclick="openModal()" id="nav-add"><i class="ph-bold ph-plus"></i> Add Song</li>
+            <li class="nav-item" onclick="switchView('library')" id="nav-lib"><i class="ph-fill ph-books"></i> Your
+                Library</li>
+            <li class="nav-item" onclick="logout()" style="margin-top: auto; color: #ff4d4d;"><i
+                    class="ph-bold ph-sign-out"></i> Logout</li>
+        </ul>
     </aside>
 
-    <!-- Main Content -->
     <main class="main-content">
-        <!-- Search -->
-        <div class="search-bar">
-            <i class="ph-bold ph-magnifying-glass"></i>
-            <input type="text" id="filterInput" class="search-input" placeholder="Filter songs..." onkeyup="filterTracks()">
+        <div class="header">
+            <div class="search-bar">
+                <span style="margin-right: 10px">&#128269;</span>
+                <input type="text" id="filterInput" placeholder="Filter songs..." onkeyup="filterTracks()">
+            </div>
+            <button class="mobile-logout" onclick="logout()">
+                <i class="ph-bold ph-sign-out"></i>
+            </button>
         </div>
 
-        <h2 id="viewTitle" style="margin-bottom: 20px; font-weight: 700;">Public Library</h2>
+        <div id="status"></div>
 
-        <!-- Track List Headers (Optional, mostly for visual structure) -->
-        <!-- <div style="display: grid; grid-template-columns: 40px 40px 1fr 100px 50px; padding: 0 15px; margin-bottom: 10px; color: #aaa; font-size: 0.8rem; border-bottom: 1px solid #333; padding-bottom: 8px;">
-            <div></div>
-            <div>#</div>
-            <div>Title</div>
-            <div style="text-align: right;">Size</div>
-            <div></div>
-        </div> -->
+        <h2 id="viewTitle">Public Library</h2>
+        <div id="loading" style="color: #888;">Loading tracks...</div>
 
-        <div class="track-list" id="trackList">
-            <div id="loading">Loading tracks...</div>
-        </div>
+        <div class="track-list" id="trackList"></div>
     </main>
 
-    <!-- Toast -->
-    <div id="status" class="toast"></div>
+    <div id="addSongModal" class="modal">
+        <div class="modal-content">
+            <h3>Add to Your Library</h3>
+            <p style="color: #b3b3b3; margin-bottom: 20px; font-size: 0.9rem;">
+                Search for any song on YouTube and we'll download it to your personal Drive folder.
+            </p>
+            <input type="text" id="songInput" class="modal-input" placeholder="e.g. Blinding Lights - The Weeknd">
 
-    <!-- Player Bar -->
-    <div class="player-bar">
-        <div class="player-left">
-            <div class="album-art"><i class="ph-fill ph-music-note"></i></div>
-            <div class="song-info">
-                <div id="currentSong" class="song-title">No Track Selected</div>
-                <div class="artist-name">Unknown Artist</div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="downloadSong()" id="dlBtn">Download</button>
             </div>
-        </div>
-
-        <div class="player-center">
-            <div class="controls">
-                <button class="ctrl-btn btn-shuffle" title="Shuffle"><i class="ph-fill ph-shuffle"></i></button>
-                <button class="ctrl-btn" onclick="prevTrack()"><i class="ph-fill ph-skip-back-circle" style="font-size: 28px;"></i></button>
-                <button id="playPauseBtn" class="play-btn" onclick="togglePlay()"><i class="ph-fill ph-play"></i></button>
-                <button class="ctrl-btn" onclick="nextTrack()"><i class="ph-fill ph-skip-forward-circle" style="font-size: 28px;"></i></button>
-                <button id="btnLoop" class="ctrl-btn btn-loop" onclick="toggleLoop()" title="Loop"><i class="ph-bold ph-repeat"></i></button>
-                <button id="btnAuto" class="ctrl-btn" onclick="toggleAutoplay()" title="Autoplay" style="display:none;"><i class="ph-bold ph-playlist"></i></button> <!-- Hidden Autoplay default -->
-            </div>
-            <div class="progress-container" id="progressContainer">
-                <span id="currentTime" class="time-display">0:00</span>
-                <div class="progress-bar">
-                    <div id="progressFill" class="progress-fill"></div>
-                </div>
-                <span id="totalTime" class="time-display">0:00</span>
-            </div>
-        </div>
-
-        <div class="player-right">
-            <i class="ph-fill ph-speaker-high"></i>&nbsp; High Quality
         </div>
     </div>
 
-    <!-- Mobile Nav -->
-    <nav class="mobile-nav">
-        <div id="mobile-nav-home" class="nav-item active" onclick="switchView('home')">
-            <i class="ph-fill ph-house"></i> Home
+    <div id="logoutModal" class="modal">
+        <div class="modal-content">
+            <h3>Log Out?</h3>
+            <p style="color: #b3b3b3; margin-bottom: 20px; font-size: 0.9rem;">
+                Are you sure you want to log out of your account?
+            </p>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                <button class="btn btn-primary" style="background-color: #ff4d4d;" onclick="confirmLogout()">Log
+                    Out</button>
+            </div>
         </div>
-        <a href="movies.html" class="nav-item">
-            <i class="ph-fill ph-film-strip"></i> Movies
-        </a>
+    </div>
+
+    <div id="addToLibModal" class="modal">
+        <div class="modal-content">
+            <h3>Add to Library?</h3>
+            <p id="addToLibText" style="color: #b3b3b3; margin-bottom: 20px; font-size: 0.9rem;">
+                Do you want to add this song to your library?
+            </p>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="confirmAddToLib()">Add Song</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="deleteModal" class="modal">
+        <div class="modal-content">
+            <h3>Remove Song?</h3>
+            <p style="color: #b3b3b3; margin-bottom: 20px; font-size: 0.9rem;">
+                Are you sure you want to remove this song from your library?
+            </p>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                <button class="btn btn-primary" style="background-color: #ff4d4d;"
+                    onclick="confirmRemoveFromLib()">Remove</button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="player-bar">
+        <div class="now-playing">
+            <div class="cover-art" id="currentArt">
+                <i class="ph-fill ph-music-note"></i>
+            </div>
+            <div class="track-info">
+                <div class="track-name-lcd" id="currentSong">No Track Selected</div>
+                <div class="artist-name-lcd">Unknown Artist</div>
+            </div>
+        </div>
+
+        <div class="player-controls">
+            <div class="control-buttons">
+                <button class="ctrl-btn" onclick="toggleLoop()" id="btnLoop" title="Loop"><i
+                        class="ph ph-repeat"></i></button>
+                <button class="ctrl-btn" onclick="prevTrack()" title="Previous"><i
+                        class="ph-fill ph-skip-back"></i></button>
+                <button class="play-btn" onclick="togglePlay()" id="playPauseBtn"><i
+                        class="ph-fill ph-play"></i></button>
+                <button class="ctrl-btn" onclick="nextTrack()" title="Next"><i
+                        class="ph-fill ph-skip-forward"></i></button>
+                <button class="ctrl-btn" onclick="toggleAutoplay()" id="btnAuto" title="Autoplay"><i
+                        class="ph ph-infinity"></i></button>
+            </div>
+
+            <div class="playback-bar">
+                <span id="currentTime">0:00</span>
+                <div class="progress-container" id="progressContainer">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <span id="totalTime">0:00</span>
+            </div>
+            <audio id="audioPlayer"></audio>
+        </div>
+
+        <div class="quality-label">
+            <i class="ph-fill ph-speaker-high"></i> High Quality
+        </div>
+    </footer>
+
+    <nav class="bottom-nav">
+        <div class="nav-item active" onclick="switchView('home')" id="mobile-nav-home">
+            <i class="ph-fill ph-house"></i>
+            <span>Home</span>
+        </div>
+        <div class="nav-item" onclick="window.location.href='movies.html'">
+            <i class="ph-fill ph-film-strip"></i>
+            <span>Movies</span>
+        </div>
         <div class="nav-item" onclick="openModal()">
-            <i class="ph-bold ph-plus-circle"></i> Add Song
+            <i class="ph-bold ph-plus-circle"></i>
+            <span>Add Song</span>
         </div>
-        <div id="mobile-nav-lib" class="nav-item" onclick="switchView('library')">
-            <i class="ph-fill ph-books"></i> Library
+        <div class="nav-item" onclick="switchView('library')" id="mobile-nav-lib">
+            <i class="ph-fill ph-books"></i>
+            <span>Library</span>
         </div>
     </nav>
 
-    <audio id="audioPlayer"></audio>
-
-    <!-- Add Song Modal -->
-    <div id="addSongModal" class="modal">
-        <div class="modal-content">
-            <h3>Add Song</h3>
-            <p>Enter exact song name (YouTube Search)</p>
-            <input type="text" id="songInput" class="modal-input" placeholder="e.g. Blinding Lights">
-            <button id="dlBtn" class="modal-btn btn-confirm" onclick="downloadSong()">Download</button>
-            <button class="modal-btn btn-cancel" onclick="closeModal()">Cancel</button>
-        </div>
-    </div>
-
-    <!-- Confirm Add To Lib Modal -->
-    <div id="addToLibModal" class="modal">
-        <div class="modal-content">
-            <h3>Add to Library</h3>
-            <p id="addToLibText">Add this song to your library?</p>
-            <button class="modal-btn btn-confirm" onclick="confirmAddToLib()">Yes, Add</button>
-            <button class="modal-btn btn-cancel" onclick="closeModal()">Cancel</button>
-        </div>
-    </div>
-    
-    <!-- Logout Modal -->
-    <div id="logoutModal" class="modal">
-        <div class="modal-content">
-            <h3>Confirm Logout</h3>
-            <p>Are you sure you want to log out?</p>
-            <button class="modal-btn btn-confirm" style="background-color: #ff4d4d; color: white;" onclick="confirmLogout()">Logout</button>
-            <button class="modal-btn btn-cancel" onclick="closeModal()">Cancel</button>
-        </div>
-    </div>
-
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <script>
         const API_URL = 'https://freakymustard.onrender.com';
 
@@ -866,27 +983,24 @@
         function removeFromLib(e, fileId) {
             e.stopPropagation();
             pendingFileId = fileId;
-
-            // Optional: Ask for confirmation? Or just delete?
-            // Let's reuse the modal or simple confirm
-            if (confirm("Remove this song from your library?\n(It works, but maybe better with a modal!)")) {
-                confirmRemoveFromLib();
-            }
+            document.getElementById('deleteModal').style.display = 'flex';
         }
-        
+
         async function confirmRemoveFromLib() {
             const fileId = pendingFileId;
-             if (!fileId) return;
-             
-             showStatus("Deleting...", 0);
-             try {
+            closeModal();
+            if (!fileId) return;
+
+            showStatus("⏳ Removing...", 0);
+
+            try {
                 const res = await fetch(`${API_URL}/api/music/library/remove`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ fileId })
+                    body: JSON.stringify({ fileId: fileId })
                 });
                 if (res.ok) {
-                    showStatus("🗑️ Removed!", 2000);
-                    if (currentView === 'library') fetchTracks(localStorage.getItem('folderId'));
+                    showStatus("🗑️ Deleted!", 2000);
+                    fetchTracks(localStorage.getItem('folderId'));
                 } else {
                     const errText = await res.text();
                     console.error("Remove failed:", errText);
