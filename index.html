@@ -948,7 +948,8 @@
                 `;
                 row.onclick = (e) => {
                     if (e.target.closest('.action-btn')) return;
-                    currentTrackIndex = index;
+                    // Dynamically find index in case tracks were reordered
+                    currentTrackIndex = allTracks.findIndex(t => t.id === track.id);
                     document.querySelectorAll('.track-row').forEach(r => r.classList.remove('playing'));
                     row.classList.add('playing');
                     playTrack(track);
