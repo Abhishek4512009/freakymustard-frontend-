@@ -182,17 +182,9 @@
                 flex: 1;
                 justify-content: center;
                 background: #222;
-                border-radius: 4px; /* Reduced from 8px for tighter fit */
-                font-size: 0.7rem;
-                padding: 8px 4px;
+                font-size: 0.75rem;
+                padding: 10px 5px;
                 white-space: nowrap;
-                gap: 6px;
-                border: 1px solid transparent; /* Ensure borders don't jump layout */
-            }
-
-            /* Specifically adjusting the 'External' and 'Turbo' buttons on mobile */
-            .btn-turbo, .btn-ext {
-                 border-width: 1px;
             }
 
             .back-btn {
@@ -214,6 +206,7 @@
             background: linear-gradient(180deg, rgba(20, 20, 20, 0) 0%, rgba(20, 20, 20, 0.8) 100%);
             border-radius: 12px;
         }
+
         .meta-title {
             font-size: 2rem;
             font-weight: 700;
@@ -221,6 +214,7 @@
             color: #fff;
             text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
         }
+
         .meta-desc {
             font-size: 1rem;
             color: #ccc;
@@ -253,13 +247,12 @@
             <span>⚡</span> Download
         </a>
 
-        <!-- Turbo Mode is effectively default now, but kept for UI consistency -->
-        <button class="btn-action btn-turbo" onclick="toggleStreamMode()">
-            <span>🚀</span> Turbo Mode
-        </button>
-
         <button class="btn-action btn-ext" onclick="openExternalPlayer()">
             <span>📽️</span> Play External
+        </button>
+
+        <button class="btn-action" onclick="autoSyncSubs()">
+            <span>✨</span> Auto-Subs
         </button>
     </div>
 
@@ -300,6 +293,24 @@
                 document.getElementById('metaDesc').innerText = storedMeta.description;
                 document.title = "Watching: " + storedMeta.title;
             }
+
+            // --- CONTINUE WATCHING (Resume Feature) ---
+            const savedTime = localStorage.getItem(`resume_${activeFileId}`);
+            if (savedTime && parseFloat(savedTime) > 30) {
+                // Auto-resume if past 30s
+                video.currentTime = parseFloat(savedTime);
+                showToast(`Resume from ${formatResumeTime(savedTime)}`);
+            }
+
+            // Save Progress (Throttled to every 5s)
+            let lastSave = 0;
+            video.addEventListener('timeupdate', () => {
+                const now = Date.now();
+                if (now - lastSave > 5000) {
+                    localStorage.setItem(`resume_${activeFileId}`, video.currentTime);
+                    lastSave = now;
+                }
+            });
 
         } else {
             alert('No video ID provided!');
@@ -365,6 +376,47 @@
             } catch (err) { showToast("❌ Error"); }
             finally { btn.innerHTML = originalText; }
         });
+
+        // Helper to load subtitles
+        function loadSubtitle(vttUrl) {
+            track.src = vttUrl;
+            track.track.mode = 'showing'; // Ensure track is visible
+            video.textTracks[0].mode = 'showing'; // Ensure track is visible
+        }
+
+        async function autoSyncSubs() {
+            const storedMeta = JSON.parse(localStorage.getItem('currentVideoMeta'));
+            const query = storedMeta ? storedMeta.title : activeFileId;
+
+            showToast("🔍 Searching for subtitles...");
+
+            try {
+                const res = await fetch(`${API_URL}/api/subtitles/search?query=${encodeURIComponent(query)}&fileId=${activeFileId}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.success && data.vttUrl) {
+                        loadSubtitle(data.vttUrl);
+                        showToast("✅ Subtitles Synced!");
+                    } else {
+                        showToast("❌ No subtitles found.");
+                    }
+                } else {
+                    showToast("❌ Search failed.");
+                }
+            } catch (e) {
+                console.error(e);
+                showToast("❌ Error searching subs.");
+            }
+        }
+
+        function formatResumeTime(seconds) {
+            const date = new Date(seconds * 1000);
+            const hh = date.getUTCHours();
+            const mm = date.getUTCMinutes();
+            const ss = date.getUTCSeconds().toString().padStart(2, '0');
+            if (hh) return `${hh}:${mm.toString().padStart(2, '0')}:${ss}`;
+            return `${mm}:${ss}`;
+        }
     </script>
 </body>
 
