@@ -799,87 +799,171 @@
                 <button class="ctrl-btn" onclick="nextTrack()" title="Next"><i
                         class="ph-fill ph-skip-forward"></i></button>
                 <button class="ctrl-btn" onclick="toggleAutoplay()" id="btnAuto" title="Autoplay"><i
-                        class="ph ph-infinity"></i></button>
+                        class="ph-fill ph-infinity"></i></button>
             </div>
-
             <div class="playback-bar">
-                <span id="currentTime">0:00</span>
+                <span id="currTime">0:00</span>
                 <div class="progress-container" id="progressContainer">
-                    <div class="progress-fill" id="progressFill"></div>
+                    <div class="progress-fill" id="progressBar"></div>
                 </div>
-                <span id="totalTime">0:00</span>
+                <span id="durTime">0:00</span>
             </div>
-            <audio id="audioPlayer"></audio>
         </div>
 
-        <div class="quality-label">
-            <i class="ph-fill ph-speaker-high"></i> High Quality
-        </div>
+        <div class="quality-label">128kbps | MP3</div>
     </footer>
 
-    <nav class="bottom-nav">
-        <div class="nav-item active" onclick="switchView('home')" id="mobile-nav-home">
-            <i class="ph-fill ph-house"></i>
-            <span>Home</span>
-        </div>
-        <div class="nav-item" onclick="window.location.href='movies.html'">
-            <i class="ph-fill ph-film-strip"></i>
-            <span>Movies</span>
-        </div>
-        <div class="nav-item" onclick="openModal()">
-            <i class="ph-bold ph-plus-circle"></i>
-            <span>Add Song</span>
-        </div>
-        <div class="nav-item" onclick="switchView('library')" id="mobile-nav-lib">
-            <i class="ph-fill ph-books"></i>
-            <span>Library</span>
-        </div>
-    </nav>
+    <!-- SortableJS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <script>
         const API_URL = 'https://freakymustard.onrender.com';
-
-        const trackListEl = document.getElementById('trackList');
-        const audioPlayer = document.getElementById('audioPlayer');
-        const currentSongLabel = document.getElementById('currentSong');
-        const statusEl = document.getElementById('status');
-        const dlBtn = document.getElementById('dlBtn');
-        const viewTitle = document.getElementById('viewTitle');
-        const btnLoop = document.getElementById('btnLoop');
-        const btnAuto = document.getElementById('btnAuto');
-
         let allTracks = [];
-        let currentView = 'home';
         let currentTrackIndex = -1;
+        let isPlaying = false;
         let isLooping = false;
         let isAutoplay = false;
+
+        const audioPlayer = new Audio();
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const progressBar = document.getElementById('progressBar');
+        const progressContainer = document.getElementById('progressContainer');
+        const trackListEl = document.getElementById('trackList');
+        const btnLoop = document.getElementById('btnLoop');
+        const btnAuto = document.getElementById('btnAuto');
+        const viewTitle = document.getElementById('viewTitle');
+        const dlBtn = document.getElementById('dlBtn');
+        const statusEl = document.getElementById('status');
+
+        let currentView = 'home'; // 'home' or 'library'
+        let pendingFileId = null; // For modal actions
         let sortableInstance = null;
 
-        if (!localStorage.getItem('isLoggedIn')) window.location.href = 'login.html';
+        // --- AUTH & INIT ---
+        async function fetchTracks(userSpecific = false) {
+            document.getElementById('loading').style.display = 'block';
+            trackListEl.innerHTML = '';
+            allTracks = [];
+
+            try {
+                let url = `${API_URL}/api/music/tracks`;
+                if (userSpecific) {
+                    const username = localStorage.getItem('username');
+                    const folderId = localStorage.getItem('folderId'); // Optional optimization
+                    url += `?username=${username}`;
+                    if (folderId) url += `&folderId=${folderId}`;
+                }
+
+                const res = await fetch(url);
+                const files = await res.json();
+                allTracks = files;
+
+                document.getElementById('loading').style.display = 'none';
+                renderTracks();
+            } catch (error) {
+                console.error(error);
+                document.getElementById('loading').innerText = 'Error loading tracks.';
+            }
+        }
+
+        function renderTracks() {
+            trackListEl.innerHTML = '';
+            if (allTracks.length === 0) {
+                trackListEl.innerHTML = '<div style="padding:20px; color:#666;">No tracks found here.</div>';
+                return;
+            }
+
+            allTracks.forEach((file, index) => {
+                const div = document.createElement('div');
+                div.className = 'track-row';
+                div.dataset.id = file.id;
+
+                // Drag Handle (Only in Library)
+                let dragHandleHtml = '';
+                if (currentView === 'library') {
+                    dragHandleHtml = `<div class="drag-handle"><i class="ph-bold ph-dots-six-vertical"></i></div>`;
+                } else {
+                    div.style.gridTemplateColumns = "20px 40px 1fr 100px 50px"; // Hide handle column
+                    dragHandleHtml = `<div></div>`; // Spacer
+                }
+
+                // Action Button Logic
+                let actionBtn = '';
+                if (currentView === 'home') {
+                    // Public list -> Add to Library
+                    actionBtn = `<button class="action-btn add" onclick="promptAddToLib(event, '${file.id}')" title="Add to Library"><i class="ph-bold ph-plus-circle"></i></button>`;
+                } else {
+                    // My Library -> Remove
+                    actionBtn = `<button class="action-btn remove" onclick="promptRemoveFromLib(event, '${file.id}')" title="Remove"><i class="ph-bold ph-trash"></i></button>`;
+                }
+
+                div.innerHTML = `
+                    ${dragHandleHtml}
+                    <div class="track-num" style="color:#666;">${index + 1}</div>
+                    <div class="track-title">${file.name.replace(/\.[^/.]+$/, "")}</div>
+                    <div style="font-size:0.8rem;">3:45</div>
+                    <div class="track-actions">
+                        ${actionBtn}
+                    </div>
+                `;
+
+                div.onclick = (e) => {
+                    // Don't play if clicking action buttons or drag handle
+                    if (e.target.closest('.action-btn') || e.target.closest('.drag-handle')) return;
+                    loadTrack(index);
+                };
+
+                trackListEl.appendChild(div);
+            });
+
+            highlightTrack();
+
+            // Initialize Sortable ONLY if in Library view
+            if (currentView === 'library') {
+                initSortable();
+            } else {
+                if (sortableInstance) sortableInstance.destroy(); // Cleanup
+            }
+        }
 
         function initSortable() {
             if (sortableInstance) sortableInstance.destroy();
+
             sortableInstance = new Sortable(trackListEl, {
-                animation: 200, swapThreshold: 0.5, handle: '.drag-handle',
-                disabled: currentView !== 'library', forceFallback: true, fallbackOnBody: true,
-                fallbackTolerance: 5, scroll: true,
-                fallbackClass: 'sortable-fallback', chosenClass: 'sortable-chosen', dragClass: 'sortable-drag',
+                animation: 250, // Smoother animation
+                swapThreshold: 0.65, // More permissive swap area
+                handle: '.drag-handle', // Only drag by handle
+                disabled: false,
+                forceFallback: true, // Force fallback to ensure consistent visuals
+                fallbackOnBody: true,
+                fallbackTolerance: 5,
+                scroll: true,
+                scrollSensitivity: 50,
+                scrollSpeed: 20,
+
+                // Classes
+                ghostClass: 'sortable-ghost', // The placeholder gap
+                chosenClass: 'track-row',  // Keep styling consistent
+                dragClass: 'sortable-drag',   // The element being dragged
+
                 onEnd: function (evt) {
-                    // Visually re-index
+                    if (evt.oldIndex === evt.newIndex) return;
+
+                    // 1. Update UI Indexes immediately
                     const rows = document.querySelectorAll('.track-row .track-num');
                     rows.forEach((el, idx) => el.innerText = idx + 1);
 
-                    // Sync internal allTracks array to match visual order
-                    const rowEls = document.querySelectorAll('.track-row');
-                    const newIds = Array.from(rowEls).map(r => r.dataset.id);
-                    const trackMap = new Map(allTracks.map(t => [t.id, t]));
-                    allTracks = newIds.map(id => trackMap.get(id)).filter(Boolean);
+                    // 2. Sync internal Array
+                    const movedItem = allTracks.splice(evt.oldIndex, 1)[0];
+                    allTracks.splice(evt.newIndex, 0, movedItem);
 
-                    // Update currentTrackIndex to match new position
-                    const playingRow = document.querySelector('.track-row.playing');
-                    if (playingRow) {
-                        currentTrackIndex = Array.from(trackListEl.children).indexOf(playingRow);
+                    // 3. Update active index if playing
+                    if (currentTrackIndex === evt.oldIndex) {
+                        currentTrackIndex = evt.newIndex;
+                    } else if (currentTrackIndex > evt.oldIndex && currentTrackIndex <= evt.newIndex) {
+                        currentTrackIndex--;
+                    } else if (currentTrackIndex < evt.oldIndex && currentTrackIndex >= evt.newIndex) {
+                        currentTrackIndex++;
                     }
 
                     saveNewOrder();
@@ -887,164 +971,117 @@
             });
         }
 
-        function switchView(view) {
-            currentView = view;
-            document.getElementById('loading').style.display = 'block';
-            trackListEl.innerHTML = '';
-            document.querySelectorAll('.sidebar .nav-item').forEach(el => el.classList.remove('active'));
-            if (view === 'home') document.getElementById('nav-home').classList.add('active');
-            if (view === 'library') document.getElementById('nav-lib').classList.add('active');
-            document.querySelectorAll('.bottom-nav .nav-item').forEach(el => el.classList.remove('active'));
-            if (view === 'home' && document.getElementById('mobile-nav-home')) document.getElementById('mobile-nav-home').classList.add('active');
-            if (view === 'library' && document.getElementById('mobile-nav-lib')) document.getElementById('mobile-nav-lib').classList.add('active');
-
-            if (sortableInstance) sortableInstance.option("disabled", view !== 'library');
-
-            if (view === 'home') {
-                viewTitle.innerText = "Public Library";
-                fetchTracks();
-            } else {
-                viewTitle.innerText = "My Private Collection";
-                fetchTracks(localStorage.getItem('folderId'));
-            }
-        }
-
-        async function fetchTracks(specificFolderId = null) {
-            try {
-                let url = `${API_URL}/api/music/tracks`;
-                if (specificFolderId) url += `?folderId=${specificFolderId}`;
-                const res = await fetch(url);
-                if (!res.ok) throw new Error("Failed to load tracks");
-                allTracks = await res.json();
-                renderTracks(allTracks);
-                document.getElementById('loading').style.display = 'none';
-            } catch (err) {
-                document.getElementById('loading').innerText = "Error loading tracks.";
-                console.error(err);
-            }
-        }
-
-        function renderTracks(tracks) {
-            trackListEl.innerHTML = '';
-            if (tracks.length === 0) {
-                trackListEl.innerHTML = '<div style="padding:20px; color:#555;">No songs found here yet.</div>';
-                return;
-            }
-            tracks.forEach((track, index) => {
-                const cleanName = track.name.replace('.mp3', '');
-                const row = document.createElement('div');
-                row.className = 'track-row';
-                row.dataset.id = track.id;
-                let actionBtn = '';
-                if (currentView === 'home') actionBtn = `<button class="action-btn add" onclick="addToLib(event, '${track.id}')" title="Add to Library">&#10133;</button>`;
-                else actionBtn = `<button class="action-btn remove" onclick="removeFromLib(event, '${track.id}')" title="Remove">&#128465;</button>`;
-
-                row.innerHTML = `
-                    <div class="drag-handle" title="Drag to reorder">&#9776;</div>
-                    <div class="track-num">${index + 1}</div>
-                    <div class="track-title">${cleanName}</div>
-                    <div style="text-align: right;">${(track.size / 1024 / 1024).toFixed(1)} MB</div>
-                    <div class="track-actions">${actionBtn}</div>
-                `;
-                row.onclick = (e) => {
-                    if (e.target.closest('.action-btn')) return;
-                    // Dynamically find index in case tracks were reordered
-                    currentTrackIndex = allTracks.findIndex(t => t.id === track.id);
-                    document.querySelectorAll('.track-row').forEach(r => r.classList.remove('playing'));
-                    row.classList.add('playing');
-                    playTrack(track);
-                };
-                trackListEl.appendChild(row);
-            });
-        }
-
-        let pendingFileId = null;
-        function addToLib(e, fileId) {
-            e.stopPropagation();
-            pendingFileId = fileId;
-            const track = allTracks.find(t => t.id === fileId);
-            if (track) document.getElementById('addToLibText').innerText = `Add "${track.name.replace('.mp3', '')}" to your library?`;
-            document.getElementById('addToLibModal').style.display = 'flex';
-        }
-
-        async function confirmAddToLib() {
-            const fileId = pendingFileId;
-            closeModal();
-            const folderId = localStorage.getItem('folderId');
-            if (!fileId) return showStatus("❌ Error: No file selected", 3000);
-            if (!folderId || folderId === 'null') return showStatus("❌ Error: No Library Folder set. Please login again.", 3000);
-
-            showStatus("⏳ Adding to library...", 0); // Indefinite until done
-
-            try {
-                const res = await fetch(`${API_URL}/api/music/library/add`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ fileId, folderId })
-                });
-                if (res.ok) {
-                    showStatus("✅ Added to library!", 2000);
-                } else {
-                    const errText = await res.text();
-                    console.error("Add failed:", errText);
-                    showStatus(`❌ Add failed: ${res.status}`, 3000);
-                }
-            } catch (e) {
-                console.error(e);
-                showStatus("❌ Network Error", 3000);
-            }
-        }
-
-        function removeFromLib(e, fileId) {
-            e.stopPropagation();
-            pendingFileId = fileId;
-            document.getElementById('deleteModal').style.display = 'flex';
-        }
-
-        async function confirmRemoveFromLib() {
-            const fileId = pendingFileId;
-            closeModal();
-            if (!fileId) return;
-
-            showStatus("⏳ Removing...", 0);
-
-            try {
-                const res = await fetch(`${API_URL}/api/music/library/remove`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ fileId: fileId })
-                });
-                if (res.ok) {
-                    showStatus("🗑️ Deleted!", 2000);
-                    fetchTracks(localStorage.getItem('folderId'));
-                } else {
-                    const errText = await res.text();
-                    console.error("Remove failed:", errText);
-                    showStatus(`❌ Delete failed: ${res.status}`, 3000);
-                }
-            } catch (e) {
-                console.error(e);
-                showStatus("❌ Network Error", 3000);
-            }
-        }
-
         async function saveNewOrder() {
-            const rows = document.querySelectorAll('.track-row');
-            const newOrder = Array.from(rows).map(row => row.dataset.id).filter(id => id);
-            await fetch(`${API_URL}/api/music/library/reorder`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ folderId: localStorage.getItem('folderId'), newOrder })
-            });
+            const folderId = localStorage.getItem('folderId');
+            if (!folderId) return;
+
+            const newOrderIds = allTracks.map(t => t.id);
+
+            try {
+                await fetch(`${API_URL}/api/music/library/reorder`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ folderId, newOrder: newOrderIds })
+                });
+                console.log("Order saved.");
+            } catch (e) {
+                console.error("Save Order Error", e);
+            }
         }
 
-        function playTrack(track) {
-            currentSongLabel.innerText = track.name.replace('.mp3', '');
+        // --- PLAYER LOGIC ---
+        function loadTrack(index) {
+            currentTrackIndex = index;
+            const track = allTracks[index];
+            if (!track) return;
+
+            // Update UI
+            document.getElementById('currentSong').innerText = track.name.replace(/\.[^/.]+$/, "");
+            document.getElementById('currentArt').style.background = `hsl(${Math.random() * 360}, 60%, 40%)`;
+
+            // Stream
             audioPlayer.src = `${API_URL}/api/music/stream/${track.id}`;
             audioPlayer.play();
+            isPlaying = true;
+            updatePlayBtn();
+            highlightTrack();
+        }
+
+        function togglePlay() {
+            if (audioPlayer.paused) {
+                audioPlayer.play();
+                isPlaying = true;
+            } else {
+                audioPlayer.pause();
+                isPlaying = false;
+            }
+            updatePlayBtn();
+        }
+
+        function updatePlayBtn() {
+            playPauseBtn.innerHTML = isPlaying
+                ? '<i class="ph-fill ph-pause"></i>'
+                : '<i class="ph-fill ph-play"></i>';
+        }
+
+        function prevTrack() {
+            let newIndex = currentTrackIndex - 1;
+            if (newIndex < 0) newIndex = allTracks.length - 1;
+            loadTrack(newIndex);
+        }
+
+        function nextTrack() {
+            let newIndex = currentTrackIndex + 1;
+            if (newIndex >= allTracks.length) newIndex = 0;
+            loadTrack(newIndex);
+        }
+
+        function highlightTrack() {
+            const rows = document.querySelectorAll('.track-row');
+            rows.forEach(r => r.classList.remove('playing'));
+            if (currentTrackIndex >= 0 && rows[currentTrackIndex]) {
+                rows[currentTrackIndex].classList.add('playing');
+            }
+        }
+
+        // Progress Bar
+        audioPlayer.addEventListener('timeupdate', () => {
+            if (isNaN(audioPlayer.duration)) return;
+            const percent = (audioPlayer.currentTime / audioPlayer.duration) * 100;
+            progressBar.style.width = `${percent}%`;
+
+            document.getElementById('currTime').innerText = formatTime(audioPlayer.currentTime);
+            document.getElementById('durTime').innerText = formatTime(audioPlayer.duration);
+        });
+
+        progressContainer.addEventListener('click', (e) => {
+            const width = progressContainer.clientWidth;
+            const clickX = e.offsetX;
+            const duration = audioPlayer.duration;
+            audioPlayer.currentTime = (clickX / width) * duration;
+        });
+
+        function formatTime(s) {
+            if (isNaN(s)) return "0:00";
+            const min = Math.floor(s / 60);
+            const sec = Math.floor(s % 60);
+            return `${min}:${sec < 10 ? '0' : ''}${sec}`;
+        }
+
+        // --- FILTER ---
+        function filterTracks() {
+            const q = document.getElementById('filterInput').value.toLowerCase();
+            const rows = document.querySelectorAll('.track-row');
+            rows.forEach((row, i) => {
+                const title = allTracks[i].name.toLowerCase();
+                row.style.display = title.includes(q) ? 'grid' : 'none';
+            });
         }
 
         function toggleLoop() {
             isLooping = !isLooping;
-            btnLoop.classList.toggle('active');
             audioPlayer.loop = isLooping;
+            btnLoop.classList.toggle('active');
         }
 
         function toggleAutoplay() {
@@ -1064,79 +1101,30 @@
             const folderId = localStorage.getItem('folderId');
 
             showStatus(`🔎 Searching...`);
-            dlBtn.innerHTML = "Searching...";
+            dlBtn.innerHTML = "Downloading...";
             dlBtn.disabled = true;
 
             try {
-                // 1. Initiate Download
                 const res = await fetch(`${API_URL}/api/music/download`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ songName, folderId })
+                    body: JSON.stringify({ songName, folderId, username: localStorage.getItem('username') })
                 });
 
                 const data = await res.json();
 
-                if (!data.success) {
-                    showStatus(`❌ Error: ${data.message || 'Failed to start'}`);
-                    resetDlBtn();
-                    return;
+                if (data.success) {
+                    showStatus(`✅ Added: ${data.title}`, 4000);
+                    document.getElementById('songInput').value = "";
+                    closeModal();
+                    // Assuming currentView or similar logic exists to refresh
+                    if (typeof fetchTracks === 'function') fetchTracks(folderId);
+                } else {
+                    showStatus(`❌ Error: ${data.message || 'Failed'}`);
                 }
-
-                const downloadId = data.downloadId;
-                dlBtn.innerHTML = "Downloading 0%";
-
-                // 2. Listen for Progress (SSE)
-                const eventSource = new EventSource(`${API_URL}/api/music/progress/${downloadId}`);
-
-                const progressBar = document.createElement('div');
-                progressBar.style.cssText = "width: 100%; height: 4px; background: #333; margin-top: 10px; border-radius: 2px; overflow: hidden;";
-                const progressFill = document.createElement('div');
-                progressFill.style.cssText = "width: 0%; height: 100%; background: var(--primary-color); transition: width 0.3s;";
-                progressBar.appendChild(progressFill);
-
-                // Insert Progress Bar into Modal if not exists
-                const modalParams = document.querySelector('#addSongModal .modal-content');
-                if (!document.getElementById('dlProgress')) {
-                    progressBar.id = 'dlProgress';
-                    modalParams.insertBefore(progressBar, document.querySelector('.modal-actions'));
-                }
-
-                eventSource.onmessage = (e) => {
-                    const progress = JSON.parse(e.data);
-
-                    if (progress.status === 'downloading') {
-                        const p = Math.round(progress.percent);
-                        dlBtn.innerHTML = `Downloading ${p}%`;
-                        document.querySelector('#dlProgress div').style.width = `${p}%`;
-                    } else if (progress.status === 'uploading') {
-                        dlBtn.innerHTML = "Uploading to Drive...";
-                        document.querySelector('#dlProgress div').style.width = `100%`;
-                        document.querySelector('#dlProgress div').style.backgroundColor = "#ffff00"; // Yellow for upload
-                    } else if (progress.status === 'completed') {
-                        eventSource.close();
-                        showStatus(`✅ Added: ${progress.title}`, 4000);
-                        document.getElementById('songInput').value = "";
-                        closeModal();
-                        if (currentView === 'library') fetchTracks(folderId);
-                        resetDlBtn();
-                        if (document.getElementById('dlProgress')) document.getElementById('dlProgress').remove();
-                    } else if (progress.status === 'error') {
-                        eventSource.close();
-                        showStatus(`❌ Error: ${progress.message}`);
-                        resetDlBtn();
-                        if (document.getElementById('dlProgress')) document.getElementById('dlProgress').remove();
-                    }
-                };
-
-                eventSource.onerror = () => {
-                    eventSource.close();
-                    // showStatus("❌ Connection Lost"); 
-                    // Don't reset immediately, maybe just network blip
-                };
-
             } catch (error) {
                 console.error(error);
                 showStatus("❌ Network Error", 5000);
+            } finally {
                 resetDlBtn();
             }
         }
@@ -1149,99 +1137,100 @@
         function showStatus(msg, duration) {
             statusEl.innerText = msg;
             statusEl.style.display = 'block';
-            if (duration) setTimeout(() => statusEl.style.display = 'none', duration);
+            if (duration) setTimeout(() => { statusEl.style.display = 'none'; }, duration);
         }
 
-        function logout() { document.getElementById('logoutModal').style.display = 'flex'; }
-        function confirmLogout() { localStorage.clear(); window.location.href = 'login.html'; }
-
-        function filterTracks() {
-            const query = document.getElementById('filterInput').value.toLowerCase();
-            const filtered = allTracks.filter(t => t.name.toLowerCase().includes(query));
-            renderTracks(filtered);
+        // --- LIBRARY MANAGEMENT ---
+        function promptAddToLib(e, fileId) {
+            e.stopPropagation();
+            pendingFileId = fileId;
+            document.getElementById('addToLibModal').style.display = 'flex';
         }
 
-        const playPauseBtn = document.getElementById('playPauseBtn');
-        const progressFill = document.getElementById('progressFill');
-        const progressContainer = document.getElementById('progressContainer');
-        const currTimeEl = document.getElementById('currentTime');
-        const totTimeEl = document.getElementById('totalTime');
+        async function confirmAddToLib() {
+            if (!pendingFileId) return;
+            closeModal();
+            showStatus("Adding to library...");
 
-        function togglePlay() {
-            if (audioPlayer.paused) { audioPlayer.play(); playPauseBtn.innerHTML = '<i class="ph-fill ph-pause"></i>'; }
-            else { audioPlayer.pause(); playPauseBtn.innerHTML = '<i class="ph-fill ph-play"></i>'; }
+            const folderId = localStorage.getItem('folderId');
+            try {
+                const res = await fetch(`${API_URL}/api/music/library/add`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ fileId: pendingFileId, folderId })
+                });
+                const data = await res.json();
+                if (data.success) showStatus("✅ Added to Library", 3000);
+                else showStatus("❌ Failed to add");
+            } catch (e) {
+                showStatus("❌ Error");
+            }
         }
 
-        audioPlayer.onplay = () => playPauseBtn.innerHTML = '<i class="ph-fill ph-pause"></i>';
-        audioPlayer.onpause = () => playPauseBtn.innerHTML = '<i class="ph-fill ph-play"></i>';
+        function promptRemoveFromLib(e, fileId) {
+            e.stopPropagation();
+            pendingFileId = fileId;
+            document.getElementById('deleteModal').style.display = 'flex';
+        }
 
-        let isDragging = false;
-        function getClientX(e) { return e.touches ? e.touches[0].clientX : e.clientX; }
-        function startDrag(e) { isDragging = true; updateScrub(e); }
-        function endDrag(e) {
-            if (isDragging) {
-                isDragging = false;
-                const rect = progressContainer.getBoundingClientRect();
-                const x = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
-                const width = rect.width;
-                const duration = audioPlayer.duration;
-                if (duration) {
-                    const percent = Math.max(0, Math.min(1, (x - rect.left) / width));
-                    audioPlayer.currentTime = percent * duration;
+        async function confirmRemoveFromLib() {
+            if (!pendingFileId) return;
+            closeModal();
+            showStatus("Removing...");
+
+            try {
+                const res = await fetch(`${API_URL}/api/music/library/remove`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ fileId: pendingFileId })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showStatus("🗑 Removed", 3000);
+                    fetchTracks(true); // Refresh
                 }
-            }
-        }
-        function updateScrub(e) {
-            const rect = progressContainer.getBoundingClientRect();
-            const x = getClientX(e);
-            const width = rect.width;
-            let percent = ((x - rect.left) / width) * 100;
-            percent = Math.max(0, Math.min(100, percent));
-            progressFill.style.width = `${percent}%`;
-            if (audioPlayer.duration) {
-                const previewTime = (percent / 100) * audioPlayer.duration;
-                currTimeEl.innerText = formatTime(previewTime);
+                else showStatus("❌ Failed to remove");
+            } catch (e) {
+                showStatus("❌ Error");
             }
         }
 
-        progressContainer.addEventListener('mousedown', startDrag);
-        document.addEventListener('mousemove', (e) => { if (isDragging) updateScrub(e); });
-        document.addEventListener('mouseup', endDrag);
-        progressContainer.addEventListener('touchstart', (e) => { e.preventDefault(); startDrag(e); }, { passive: false });
-        document.addEventListener('touchmove', (e) => { if (isDragging) { e.preventDefault(); updateScrub(e); } }, { passive: false });
-        document.addEventListener('touchend', endDrag);
+        // --- VIEW SWITCHING ---
+        function switchView(view) {
+            currentView = view;
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
 
-        audioPlayer.ontimeupdate = () => {
-            if (!isDragging && audioPlayer.duration) {
-                const percent = (audioPlayer.currentTime / audioPlayer.duration) * 100;
-                progressFill.style.width = `${percent}%`;
-                currTimeEl.innerText = formatTime(audioPlayer.currentTime);
-                totTimeEl.innerText = formatTime(audioPlayer.duration);
+            if (view === 'home') {
+                document.getElementById('nav-home').classList.add('active');
+                viewTitle.innerText = "Public Library";
+                // Only show download button in library view? Or always? 
+                // Requirement says "+" button is for adding songs, usually implies to library.
+                // But let's keep it visible.
+                fetchTracks(false);
+            } else if (view === 'library') {
+                document.getElementById('nav-lib').classList.add('active');
+                viewTitle.innerText = "Your Library";
+                fetchTracks(true); // User specific
             }
-        };
-
-        function formatTime(seconds) {
-            if (isNaN(seconds)) return "0:00";
-            const min = Math.floor(seconds / 60);
-            const sec = Math.floor(seconds % 60);
-            return `${min}:${sec < 10 ? '0' : ''}${sec}`;
+            
+            // Close mobile menu if open (implementation dependent, simplified here)
         }
 
-        function nextTrack() {
-            if (currentTrackIndex < allTracks.length - 1) { currentTrackIndex++; playSelectedTrack(); }
-        }
-        function prevTrack() {
-            if (currentTrackIndex > 0) { currentTrackIndex--; playSelectedTrack(); }
-        }
-        function playSelectedTrack() {
-            document.querySelectorAll('.track-row').forEach(r => r.classList.remove('playing'));
-            const rows = document.querySelectorAll('.track-row');
-            if (rows[currentTrackIndex]) rows[currentTrackIndex].classList.add('playing');
-            playTrack(allTracks[currentTrackIndex]);
+        function logout() {
+            document.getElementById('logoutModal').style.display = 'flex';
         }
 
-        initSortable();
-        fetchTracks();
+        function confirmLogout() {
+            localStorage.clear();
+            window.location.replace('login.html');
+        }
+
+        // Init
+        // Mobile check
+        if (window.innerWidth <= 768) {
+            document.querySelector('.bottom-nav').style.display = 'flex';
+        }
+
+        switchView('home');
+
     </script>
 </body>
 
