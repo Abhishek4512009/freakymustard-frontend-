@@ -345,12 +345,12 @@
                 } else {
                     // Use Metadata if available
                     if (item.metadata && item.metadata.poster) {
-                        thumbHtml = `<img src="${item.metadata.poster}" class="movie-thumb" loading="lazy">`;
+                        thumbHtml = `<img src="${item.metadata.poster}" class="movie-thumb" loading="lazy" alt="${title}">`;
                         title = item.metadata.title || item.name;
                     } else if (item.thumbnailLink) {
-                        thumbHtml = `<img src="${item.thumbnailLink.replace('=s220', '=s600')}" class="movie-thumb" loading="lazy">`;
+                        thumbHtml = `<img src="${item.thumbnailLink.replace('=s220', '=s600')}" class="movie-thumb" loading="lazy" alt="${title}">`;
                     } else {
-                        thumbHtml = `<img src="https://placehold.co/300x450/222/555?text=No+Cover" class="movie-thumb">`;
+                        thumbHtml = `<img src="https://placehold.co/300x450/222/555?text=No+Cover" class="movie-thumb" alt="No Cover">`;
                     }
                 }
 
@@ -387,7 +387,7 @@
             fetchMovies(prevFolder);
         }
 
-        // Handle Mobile Nav visibility
+        // Handle Nav display
         if (window.innerWidth <= 768) document.querySelector('.bottom-nav').style.display = 'flex';
 
         // Initial Load
